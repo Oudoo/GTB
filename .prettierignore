@@ -1,0 +1,14 @@
+.next
+dist
+node_modules
+src/generated
+public/sw.js
+pnpm-lock.yaml
+prisma/migrations
+docs/source
+docs/planning
+playwright-report
+test-results
+artifacts
+storage
+openapi/al-qarib-v1.yaml

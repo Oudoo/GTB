@@ -1,0 +1,59 @@
+// Al Qarib GTB sandbox — Prisma schema (multi-file).
+// Money is stored as BIGINT integer minor units with an explicit currency (MON-01).
+// Platform tables live in schema "public"; the deterministic simulated core/rails live in
+// the separate schema "simcore" and are reached only through the CoreBankingPort /
+// PaymentRailPort adapters (MON-02, document 03 "Simulation design").
+
+generator client {
+  provider = "prisma-client"
+  output   = "../../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  schemas  = ["public", "simcore"]
+}
+
+enum Segment {
+  LARGE
+  MEDIUM
+  SMALL
+
+  @@schema("public")
+}
+
+enum Rail {
+  LYPAY
+  ACH
+  INTERNAL
+  BRANCH
+
+  @@schema("public")
+}
+
+enum TransactionType {
+  INSTANT_ACCOUNT_CREDIT
+  ACH_CREDIT
+  OWN_ACCOUNT_TRANSFER
+  BULK_CREDIT
+  PAYROLL_SALARY
+  PAYROLL_ALLOWANCE
+  BRANCH_CASH_DEPOSIT
+  BRANCH_CHEQUE_DEPOSIT
+
+  @@schema("public")
+}
+
+enum Provenance {
+  DEMO_UNCONFIRMED
+  BANK_CONFIRMED
+
+  @@schema("public")
+}
+
+enum ExecutionMode {
+  IMMEDIATE
+  SCHEDULED
+
+  @@schema("public")
+}

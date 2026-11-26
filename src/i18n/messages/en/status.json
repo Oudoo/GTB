@@ -1,0 +1,151 @@
+{
+  "payment": {
+    "DRAFT": "Draft",
+    "PENDING_APPROVAL": "Pending approval",
+    "APPROVED": "Approved",
+    "SCHEDULED": "Scheduled",
+    "QUEUED": "Queued for execution",
+    "PROCESSING": "Processing",
+    "SUBMITTED": "Submitted to rail",
+    "SETTLED": "Settled",
+    "REJECTED": "Rejected",
+    "CANCELLED": "Cancelled",
+    "EXPIRED": "Expired",
+    "FAILED": "Failed before posting",
+    "STATUS_UNKNOWN": "Result being checked",
+    "RETURNED": "Returned"
+  },
+  "paymentHelp": {
+    "DRAFT": "Not submitted yet. Only the creator can edit it.",
+    "PENDING_APPROVAL": "Waiting for an independent checker. Nothing has been debited.",
+    "APPROVED": "Approved. It will be released after final checks.",
+    "SCHEDULED": "Approved and waiting for its execution date. Limits and funds are checked again on that date.",
+    "QUEUED": "Approved and waiting for the processing service.",
+    "PROCESSING": "Being sent for execution. Funds are reserved.",
+    "SUBMITTED": "Accepted by the payment rail. This is not settlement yet.",
+    "SETTLED": "Booked in the banking system. The debit is final.",
+    "REJECTED": "A checker rejected this proposal. Nothing was debited.",
+    "CANCELLED": "Cancelled before execution. Nothing was debited.",
+    "EXPIRED": "The approval period ended before a decision.",
+    "FAILED": "Definitely failed before posting. Nothing was debited and reserved funds were released.",
+    "STATUS_UNKNOWN": "The bank did not confirm the result. We are checking. Do not submit again.",
+    "RETURNED": "Settled first, then returned by the receiving side. A compensating entry was booked."
+  },
+  "batch": {
+    "DRAFT": "Draft",
+    "VALIDATING": "Validating",
+    "READY": "Ready for review",
+    "PENDING_APPROVAL": "Pending approval",
+    "APPROVED": "Approved",
+    "SCHEDULED": "Scheduled",
+    "PROCESSING": "Processing",
+    "COMPLETED": "Completed",
+    "PARTIALLY_COMPLETED": "Partially completed",
+    "FAILED": "Failed",
+    "REJECTED": "Rejected",
+    "CANCELLED": "Cancelled"
+  },
+  "row": {
+    "NONE": "Not executed",
+    "PENDING": "Waiting",
+    "PROCESSING": "Processing",
+    "SUBMITTED": "Submitted to rail",
+    "SETTLED": "Settled",
+    "FAILED": "Failed before posting",
+    "STATUS_UNKNOWN": "Result being checked",
+    "RETURNED": "Returned",
+    "CANCELLED": "Cancelled"
+  },
+  "validation": {
+    "VALID": "Valid",
+    "INVALID": "Invalid",
+    "DUPLICATE": "Duplicate"
+  },
+  "approval": {
+    "PENDING": "Awaiting decision",
+    "APPROVED": "Approved",
+    "REJECTED": "Rejected",
+    "CANCELLED": "Cancelled",
+    "SUPERSEDED": "Replaced by a newer revision",
+    "EXPIRED": "Expired"
+  },
+  "agreement": {
+    "DRAFT": "Draft",
+    "ACTIVE": "Active",
+    "SUSPENDED": "Suspended",
+    "CLOSED": "Closed",
+    "EXPIRED": "Expired",
+    "NOT_YET_EFFECTIVE": "Not yet effective"
+  },
+  "agreementVersion": {
+    "DRAFT": "Draft",
+    "PENDING_APPROVAL": "Pending bank approval",
+    "APPROVED": "Approved — not yet effective",
+    "EFFECTIVE": "Effective",
+    "SUPERSEDED": "Superseded",
+    "REJECTED": "Rejected",
+    "WITHDRAWN": "Withdrawn"
+  },
+  "governance": {
+    "PENDING_APPROVAL": "Pending approval",
+    "APPROVED": "Approved",
+    "EFFECTIVE": "Effective",
+    "SUPERSEDED": "Superseded",
+    "REJECTED": "Rejected",
+    "WITHDRAWN": "Withdrawn"
+  },
+  "deposit": {
+    "DRAFT": "Draft",
+    "PENDING_MANAGER": "Waiting for branch manager",
+    "PENDING_POSTING": "Being posted",
+    "ACCEPTED_PENDING_CLEARING": "Cheque accepted — pending clearing",
+    "POSTED": "Posted",
+    "RETURNED": "Cheque returned",
+    "REJECTED": "Rejected by manager",
+    "STATUS_UNKNOWN": "Result being checked",
+    "CANCELLED": "Cancelled"
+  },
+  "membership": {
+    "ACTIVE": "Active",
+    "SUSPENDED": "Suspended",
+    "INVITED": "Invited"
+  },
+  "account": {
+    "ACTIVE": "Active",
+    "FROZEN": "Frozen",
+    "CLOSED": "Closed"
+  },
+  "delivery": {
+    "R1_CORE": "Available in this release",
+    "R1_SUBSET": "Partly available in this release",
+    "R1_FOUNDATION": "Foundation available in this release",
+    "R2": "Planned — release 2",
+    "R3": "Planned — release 3"
+  },
+  "report": {
+    "PENDING": "Being prepared",
+    "READY": "Ready",
+    "FAILED": "Failed",
+    "EXPIRED": "Expired"
+  },
+  "job": {
+    "PENDING": "Waiting",
+    "RUNNING": "Running",
+    "SUCCEEDED": "Done",
+    "DEAD": "Needs attention",
+    "CANCELLED": "Cancelled"
+  },
+  "webhookDelivery": {
+    "PENDING": "Pending",
+    "DELIVERED": "Delivered",
+    "FAILED": "Failed — will retry",
+    "DEAD": "Stopped after retries"
+  },
+  "match": {
+    "UNCHECKED": "Not checked",
+    "MATCHED": "Name matches",
+    "CLOSE_MATCH": "Close match — needs acknowledgment",
+    "MISMATCH": "Name does not match",
+    "NOT_FOUND": "Account not found"
+  }
+}

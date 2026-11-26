@@ -1,0 +1,57 @@
+{
+  "home": "Home",
+  "dashboard": "Dashboard",
+  "accounts": "Accounts",
+  "payments": "Payments",
+  "beneficiaries": "Beneficiaries",
+  "approvals": "Approvals",
+  "batches": "Bulk transfers",
+  "payroll": "Payroll",
+  "payrollEmployees": "Employees",
+  "customers": "Customers",
+  "deposits": "Deposits",
+  "reports": "Reports",
+  "agreement": "Agreement",
+  "limits": "Limits and usage",
+  "adminUsers": "Users and access",
+  "adminRules": "Approval rules",
+  "notifications": "Alerts",
+  "developer": "Developer",
+  "audit": "Audit trail",
+  "products": "Product catalogue",
+  "more": "More",
+  "groups": {
+    "cash": "Cash",
+    "pay": "Pay",
+    "collect": "Collect",
+    "control": "Control",
+    "administer": "Administer"
+  },
+  "bank": {
+    "overview": "Overview",
+    "corporates": "Corporates",
+    "approvals": "Governance approvals",
+    "railParameters": "Rail parameters",
+    "teller": "Teller deposits",
+    "branchApprovals": "Branch approvals",
+    "operations": "Payment operations",
+    "reconciliation": "Reconciliation",
+    "simulator": "Sandbox simulator",
+    "audit": "Audit trail",
+    "groups": {
+      "govern": "Govern",
+      "branch": "Branch",
+      "operate": "Operate"
+    }
+  },
+  "context": {
+    "switch": "Switch workspace",
+    "current": "Current workspace",
+    "choose": "Choose a workspace",
+    "chooseBody": "You have access to more than one workspace. Choose where to work. Switching clears what is on screen.",
+    "corporateWorkspace": "Corporate workspace",
+    "bankWorkspace": "Bank workspace",
+    "none": "Your account has no active workspace. Contact your administrator."
+  },
+  "pendingApprovals": "{count, plural, =0 {No approvals waiting} one {# approval waiting} other {# approvals waiting}}"
+}

@@ -1,0 +1,248 @@
+// Durable jobs, transactional outbox, audit, idempotency, API credentials and webhooks
+// (SEC-05, PAY-04, API-01, EVT-01).
+
+enum JobState {
+  PENDING
+  RUNNING
+  SUCCEEDED
+  DEAD
+  CANCELLED
+
+  @@schema("public")
+}
+
+enum AuditActorKind {
+  PERSON
+  CREDENTIAL
+  SERVICE
+
+  @@schema("public")
+}
+
+enum AuditResult {
+  SUCCESS
+  DENIED
+  FAILED
+
+  @@schema("public")
+}
+
+enum IdempotencyState {
+  IN_PROGRESS
+  COMPLETED
+
+  @@schema("public")
+}
+
+enum DeliveryState {
+  PENDING
+  DELIVERED
+  FAILED
+  DEAD
+
+  @@schema("public")
+}
+
+/// PostgreSQL-backed job queue. Claimed with FOR UPDATE SKIP LOCKED and a lease.
+model Job {
+  id            String    @id @default(uuid(7)) @db.Uuid
+  type          String
+  /// Optional uniqueness key: enqueueing the same logical job twice is a no-op.
+  dedupKey      String?   @unique
+  payload       Json
+  state         JobState  @default(PENDING)
+  availableAt   DateTime  @default(now()) @db.Timestamptz(6)
+  attempts      Int       @default(0)
+  maxAttempts   Int       @default(8)
+  lockedBy      String?
+  lockedUntil   DateTime? @db.Timestamptz(6)
+  lastErrorCode String?
+  bankId        String?   @db.Uuid
+  corporateId   String?   @db.Uuid
+  aggregateType String?
+  aggregateId   String?   @db.Uuid
+  correlationId String?
+  createdAt     DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt     DateTime  @updatedAt @db.Timestamptz(6)
+  finishedAt    DateTime? @db.Timestamptz(6)
+
+  @@index([state, availableAt])
+  @@index([aggregateType, aggregateId])
+  @@schema("public")
+}
+
+model WorkerHeartbeat {
+  workerId      String   @id
+  hostname      String
+  pid           Int
+  startedAt     DateTime @db.Timestamptz(6)
+  lastSeenAt    DateTime @db.Timestamptz(6)
+  jobsProcessed Int      @default(0)
+  buildId       String?
+
+  @@schema("public")
+}
+
+/// Domain event written in the same transaction as the state change it describes (EVT-01).
+model OutboxEvent {
+  id            String    @id @default(uuid(7)) @db.Uuid
+  bankId        String    @db.Uuid
+  corporateId   String?   @db.Uuid
+  type          String
+  schemaVersion Int       @default(1)
+  /// Safe aggregate only; never payroll row detail.
+  payload       Json
+  dedupKey      String    @unique
+  correlationId String?
+  occurredAt    DateTime  @default(now()) @db.Timestamptz(6)
+  publishedAt   DateTime? @db.Timestamptz(6)
+
+  deliveries WebhookDelivery[]
+
+  @@index([publishedAt, occurredAt])
+  @@index([corporateId, occurredAt])
+  @@schema("public")
+}
+
+/// Append-only. The runtime role has INSERT/SELECT only and a trigger rejects UPDATE/DELETE.
+model AuditEvent {
+  id                String         @id @default(uuid(7)) @db.Uuid
+  bankId            String?        @db.Uuid
+  corporateId       String?        @db.Uuid
+  actorKind         AuditActorKind
+  actorPersonId     String?        @db.Uuid
+  actorCredentialId String?        @db.Uuid
+  actorService      String?
+  action            String
+  targetType        String
+  targetId          String?
+  at                DateTime       @default(now()) @db.Timestamptz(6)
+  reason            String?
+  correlationId     String?
+  proposalRevision  Int?
+  /// Sanitized before/after differences. Redaction happens before insert.
+  changes           Json?
+  result            AuditResult    @default(SUCCESS)
+  sensitiveRead     Boolean        @default(false)
+
+  @@index([bankId, corporateId, at])
+  @@index([targetType, targetId, at])
+  @@index([correlationId])
+  @@schema("public")
+}
+
+/// Rejected authentication/authorization attempts, kept apart from business audit (SEC-05).
+model SecurityEvent {
+  id             String   @id @default(uuid(7)) @db.Uuid
+  at             DateTime @default(now()) @db.Timestamptz(6)
+  kind           String
+  identifierHash String?
+  personId       String?  @db.Uuid
+  bankId         String?  @db.Uuid
+  corporateId    String?  @db.Uuid
+  correlationId  String?
+  detail         Json?
+
+  @@index([kind, at])
+  @@schema("public")
+}
+
+/// Request idempotency: stores a pointer to the result, never a payroll payload (document 04).
+model IdempotencyRecord {
+  id             String           @id @default(uuid(7)) @db.Uuid
+  /// Hash of bank/corporate scope, authenticated principal, method and canonical route.
+  scopeKey       String
+  key            String
+  requestHash    String
+  state          IdempotencyState @default(IN_PROGRESS)
+  responseStatus Int?
+  resultType     String?
+  resultId       String?
+  resultMeta     Json?
+  lockedUntil    DateTime         @db.Timestamptz(6)
+  createdAt      DateTime         @default(now()) @db.Timestamptz(6)
+  completedAt    DateTime?        @db.Timestamptz(6)
+  expiresAt      DateTime         @db.Timestamptz(6)
+
+  @@unique([scopeKey, key])
+  @@index([expiresAt])
+  @@schema("public")
+}
+
+/// Sandbox bearer credential: only a hash of the opaque token is stored.
+model ApiCredential {
+  id                String    @id @default(uuid(7)) @db.Uuid
+  bankId            String    @db.Uuid
+  corporateId       String    @db.Uuid
+  name              String
+  tokenPrefix       String    @unique
+  tokenHash         String    @unique
+  scopes            String[]
+  accountIds        String[]  @db.Uuid
+  expiresAt         DateTime  @db.Timestamptz(6)
+  revokedAt         DateTime? @db.Timestamptz(6)
+  lastUsedAt        DateTime? @db.Timestamptz(6)
+  createdByPersonId String    @db.Uuid
+  createdAt         DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt         DateTime  @updatedAt @db.Timestamptz(6)
+
+  @@index([corporateId])
+  @@schema("public")
+}
+
+model ApiQuotaWindow {
+  credentialId String   @db.Uuid
+  windowKind   String
+  windowStart  DateTime @db.Timestamptz(6)
+  count        Int      @default(0)
+
+  @@id([credentialId, windowKind, windowStart])
+  @@schema("public")
+}
+
+model WebhookSubscription {
+  id                       String    @id @default(uuid(7)) @db.Uuid
+  bankId                   String    @db.Uuid
+  corporateId              String    @db.Uuid
+  url                      String
+  events                   String[]
+  /// AES-256-GCM ciphertext under DATA_ENCRYPTION_KEY; the plaintext secret is shown once.
+  secretCiphertext         String
+  previousSecretCiphertext String?
+  previousSecretExpiresAt  DateTime? @db.Timestamptz(6)
+  active                   Boolean   @default(true)
+  createdByPersonId        String    @db.Uuid
+  createdAt                DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt                DateTime  @updatedAt @db.Timestamptz(6)
+  version                  Int       @default(1)
+
+  deliveries WebhookDelivery[]
+
+  @@index([corporateId, active])
+  @@schema("public")
+}
+
+model WebhookDelivery {
+  id                String        @id @default(uuid(7)) @db.Uuid
+  subscriptionId    String        @db.Uuid
+  eventId           String        @db.Uuid
+  corporateId       String        @db.Uuid
+  state             DeliveryState @default(PENDING)
+  attempts          Int           @default(0)
+  nextAttemptAt     DateTime?     @db.Timestamptz(6)
+  lastAttemptAt     DateTime?     @db.Timestamptz(6)
+  lastStatusCode    Int?
+  lastErrorCode     String?
+  /// Bounded, redacted excerpt of the subscriber response.
+  responseSnippet   String?
+  replayOfDeliveryId String?      @db.Uuid
+  createdAt         DateTime      @default(now()) @db.Timestamptz(6)
+  updatedAt         DateTime      @updatedAt @db.Timestamptz(6)
+
+  subscription WebhookSubscription @relation(fields: [subscriptionId], references: [id])
+  event        OutboxEvent         @relation(fields: [eventId], references: [id])
+
+  @@index([subscriptionId, createdAt])
+  @@index([state, nextAttemptAt])
+  @@schema("public")
+}

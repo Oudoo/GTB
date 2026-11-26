@@ -1,0 +1,220 @@
+// Deterministic SIMULATED core ledger and rails. Isolated in its own PostgreSQL schema.
+// Nothing here is a real bank system: it exists so the platform can prove hold, posting,
+// idempotency, timeout and reconciliation behaviour (MON-02, document 03).
+
+enum SimAccountKind {
+  CUSTOMER
+  SETTLEMENT_CONTROL
+  FEE_INCOME
+  CASH_VAULT
+  CHEQUE_CLEARING
+  OPENING_EQUITY
+
+  @@schema("simcore")
+}
+
+enum SimAccountStatus {
+  ACTIVE
+  BLOCKED
+  CLOSED
+
+  @@schema("simcore")
+}
+
+enum SimHoldState {
+  ACTIVE
+  CAPTURED
+  RELEASED
+
+  @@schema("simcore")
+}
+
+enum SimScenario {
+  SUCCESS
+  NAME_MISMATCH
+  CLOSE_MATCH
+  ACCOUNT_BLOCKED
+  RAIL_REJECT
+  TIMEOUT_BEFORE_PROCESSING
+  TIMEOUT_AFTER_BOOKING
+  ACH_DELAYED
+  LATE_RETURN
+  DUPLICATE_EVENT
+  OUT_OF_ORDER_EVENT
+
+  @@schema("simcore")
+}
+
+enum SimRailStatus {
+  ACCEPTED
+  SETTLED
+  REJECTED
+  RETURNED
+
+  @@schema("simcore")
+}
+
+model SimCoreAccount {
+  ref           String           @id
+  bankCode      String
+  ownerRef      String?
+  holderName    String
+  currency      String
+  kind          SimAccountKind
+  status        SimAccountStatus @default(ACTIVE)
+  /// Maintained in the same transaction as the entries that change it.
+  bookedMinor   BigInt           @default(0)
+  allowNegative Boolean          @default(false)
+  createdAt     DateTime         @default(now()) @db.Timestamptz(6)
+  updatedAt     DateTime         @updatedAt @db.Timestamptz(6)
+
+  holds   SimCoreHold[]
+  entries SimCoreEntry[]
+
+  @@index([bankCode, ownerRef])
+  @@schema("simcore")
+}
+
+/// Debit reservation. Available = booked − ACTIVE holds. Idempotent by reference.
+model SimCoreHold {
+  reference   String       @id
+  accountRef  String
+  amountMinor BigInt
+  state       SimHoldState @default(ACTIVE)
+  createdAt   DateTime     @default(now()) @db.Timestamptz(6)
+  updatedAt   DateTime     @updatedAt @db.Timestamptz(6)
+
+  account SimCoreAccount @relation(fields: [accountRef], references: [ref])
+
+  @@index([accountRef, state])
+  @@schema("simcore")
+}
+
+/// One journal per external execution reference (idempotency). Entries sum to zero per currency;
+/// a deferred constraint trigger enforces this at commit.
+model SimCoreJournal {
+  id                          String   @id @default(uuid(7)) @db.Uuid
+  executionReference          String   @unique
+  bankCode                    String
+  kind                        String
+  businessDate                DateTime @db.Date
+  postedAt                    DateTime @db.Timestamptz(6)
+  narrative                   String
+  groupRef                    String?
+  payloadHash                 String
+  /// Compensation linkage for returns: the original is retained, never deleted.
+  reversesExecutionReference  String?
+
+  entries SimCoreEntry[]
+
+  @@index([bankCode, businessDate])
+  @@schema("simcore")
+}
+
+model SimCoreEntry {
+  id          String   @id @default(uuid(7)) @db.Uuid
+  journalId   String   @db.Uuid
+  accountRef  String
+  lineNo      Int
+  /// Positive = credit (balance increases), negative = debit.
+  signedMinor BigInt
+  currency    String
+  /// Component label used by statement projections: PRINCIPAL | FEE.
+  component   String   @default("PRINCIPAL")
+  postedAt    DateTime @db.Timestamptz(6)
+
+  journal SimCoreJournal @relation(fields: [journalId], references: [id])
+  account SimCoreAccount @relation(fields: [accountRef], references: [ref])
+
+  @@unique([journalId, lineNo])
+  @@index([accountRef, postedAt, id])
+  @@schema("simcore")
+}
+
+/// Synthetic directory of recipient accounts used for name enquiry and rail routing.
+/// `scenario` is explicit fixture metadata — never a magic amount (document 03).
+model SimDirectoryAccount {
+  scheme     String
+  reference  String
+  holderName String
+  bankName   String
+  scenario   SimScenario      @default(SUCCESS)
+  status     SimAccountStatus @default(ACTIVE)
+  /// Scenario already triggered for these instruction references (one-shot behaviours).
+  consumedBy String[]
+
+  @@id([scheme, reference])
+  @@schema("simcore")
+}
+
+/// Operator/test-injected fault. Sandbox only.
+model SimFault {
+  id            String   @id @default(uuid(7)) @db.Uuid
+  targetKind    String
+  targetValue   String
+  fault         String
+  remainingUses Int?
+  note          String?
+  createdBy     String?
+  createdAt     DateTime @default(now()) @db.Timestamptz(6)
+
+  @@index([targetKind, targetValue])
+  @@schema("simcore")
+}
+
+model SimRailMessage {
+  railReference        String        @id
+  rail                 String
+  instructionReference String        @unique
+  bankCode             String
+  amountMinor          BigInt
+  currency             String
+  destinationScheme    String
+  destinationReference String
+  status               SimRailStatus @default(ACCEPTED)
+  rejectCode           String?
+  acceptedAt           DateTime      @db.Timestamptz(6)
+  settleAt             DateTime      @db.Timestamptz(6)
+  returnAt             DateTime?     @db.Timestamptz(6)
+  /// Ordered status events as the rail would emit them (may contain duplicates / out of order).
+  events               Json          @default("[]")
+  eventCursor          Int           @default(0)
+
+  @@index([status, settleAt])
+  @@schema("simcore")
+}
+
+model SimCheque {
+  reference   String   @id
+  bankCode    String
+  amountMinor BigInt
+  status      String   @default("PENDING")
+  decidedAt   DateTime? @db.Timestamptz(6)
+  /// Clearing events emitted (duplicates are possible on purpose).
+  events      Json     @default("[]")
+
+  @@schema("simcore")
+}
+
+/// Sandbox switches: clock offset, rail/core availability.
+model SimSetting {
+  key       String   @id
+  value     Json
+  updatedAt DateTime @updatedAt @db.Timestamptz(6)
+
+  @@schema("simcore")
+}
+
+/// Reconciliation-extract overlay used to inject a discrepancy without editing the ledger.
+model SimReconOverlay {
+  id                 String   @id @default(uuid(7)) @db.Uuid
+  bankCode           String
+  businessDate       DateTime @db.Date
+  executionReference String
+  kind               String
+  amountMinor        BigInt?
+  createdAt          DateTime @default(now()) @db.Timestamptz(6)
+
+  @@index([bankCode, businessDate])
+  @@schema("simcore")
+}

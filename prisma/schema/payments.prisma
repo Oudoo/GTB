@@ -1,0 +1,330 @@
+// Beneficiaries, single payments and execution (PAY-01..04, APR-01, LIM-02..03).
+
+enum BeneficiaryMatchStatus {
+  UNCHECKED
+  MATCHED
+  CLOSE_MATCH
+  MISMATCH
+  NOT_FOUND
+
+  @@schema("public")
+}
+
+enum PaymentState {
+  DRAFT
+  PENDING_APPROVAL
+  APPROVED
+  SCHEDULED
+  QUEUED
+  PROCESSING
+  SUBMITTED
+  SETTLED
+  REJECTED
+  CANCELLED
+  EXPIRED
+  FAILED
+  STATUS_UNKNOWN
+  RETURNED
+
+  @@schema("public")
+}
+
+enum DestinationKind {
+  BENEFICIARY
+  OWN_ACCOUNT
+
+  @@schema("public")
+}
+
+enum InstructionKind {
+  SINGLE_PAYMENT
+  BULK_ROW
+  PAYROLL_ROW
+
+  @@schema("public")
+}
+
+enum InstructionState {
+  PENDING
+  PROCESSING
+  SUBMITTED
+  SETTLED
+  FAILED
+  STATUS_UNKNOWN
+  RETURNED
+  CANCELLED
+
+  @@schema("public")
+}
+
+enum AttemptState {
+  INTENT
+  HOLD_PLACED
+  RAIL_SUBMITTED
+  BOOKED
+  FAILED
+  UNKNOWN
+
+  @@schema("public")
+}
+
+enum AttemptPhase {
+  HOLD
+  RAIL
+  BOOKING
+
+  @@schema("public")
+}
+
+enum ReservationState {
+  RESERVED
+  CONSUMED
+  RELEASED
+
+  @@schema("public")
+}
+
+model Beneficiary {
+  id                     String                 @id @default(uuid(7)) @db.Uuid
+  bankId                 String                 @db.Uuid
+  corporateId            String                 @db.Uuid
+  displayName            String
+  scheme                 String
+  /// Normalized sandbox account reference (e.g. DEMO-LY-900001). Not an IBAN.
+  accountReference       String
+  bankName               String?
+  country                String                 @default("LY")
+  matchStatus            BeneficiaryMatchStatus @default(UNCHECKED)
+  matchedName            String?
+  matchCheckedAt         DateTime?              @db.Timestamptz(6)
+  closeMatchAcknowledged Boolean                @default(false)
+  archivedAt             DateTime?              @db.Timestamptz(6)
+  /// "<corporateId>:<scheme>:<reference>" while not archived (unique live beneficiary per account).
+  activeKey              String?                @unique
+  createdByPersonId      String                 @db.Uuid
+  createdAt              DateTime               @default(now()) @db.Timestamptz(6)
+  updatedAt              DateTime               @updatedAt @db.Timestamptz(6)
+  version                Int                    @default(1)
+
+  @@unique([id, corporateId])
+  @@index([corporateId, archivedAt])
+  @@schema("public")
+}
+
+model Payment {
+  id                    String          @id @default(uuid(7)) @db.Uuid
+  bankId                String          @db.Uuid
+  corporateId           String          @db.Uuid
+  reference             String
+  moduleId              String
+  transactionType       TransactionType
+  rail                  Rail
+  sourceAccountId       String          @db.Uuid
+  destinationKind       DestinationKind
+  beneficiaryId         String?         @db.Uuid
+  destinationAccountId  String?         @db.Uuid
+  /// Immutable copy of the recipient as reviewed (PAY-01: edits never rewrite history).
+  destinationSnapshot   Json
+  amountMinor           BigInt
+  currency              String
+  /// Fee quote accepted at submission (LIM-04).
+  feeMinor              BigInt          @default(0)
+  purpose               String
+  clientReference       String?
+  executionMode         ExecutionMode
+  executeAt             DateTime?       @db.Timestamptz(6)
+  executionBusinessDate DateTime?       @db.Date
+  state                 PaymentState    @default(DRAFT)
+  releaseBlockCode      String?
+  failureCode           String?
+  revision              Int             @default(1)
+  proposalHash          String?
+  agreementVersionId    String?         @db.Uuid
+  policySnapshot        Json?
+  approvalRequestId     String?         @db.Uuid
+  makerPersonId         String          @db.Uuid
+  makerMembershipId     String          @db.Uuid
+  createdVia            String          @default("WEB")
+  createdByCredentialId String?         @db.Uuid
+  submittedAt           DateTime?       @db.Timestamptz(6)
+  settledAt             DateTime?       @db.Timestamptz(6)
+  createdAt             DateTime        @default(now()) @db.Timestamptz(6)
+  updatedAt             DateTime        @updatedAt @db.Timestamptz(6)
+  version               Int             @default(1)
+
+  sourceAccount Account               @relation("PaymentSource", fields: [sourceAccountId, corporateId], references: [id, corporateId])
+  revisions     PaymentRevision[]
+  instruction   BusinessInstruction?
+
+  @@unique([corporateId, reference])
+  @@index([corporateId, state, createdAt])
+  @@index([sourceAccountId, createdAt])
+  @@schema("public")
+}
+
+model PaymentRevision {
+  id                String   @id @default(uuid(7)) @db.Uuid
+  paymentId         String   @db.Uuid
+  revisionNo        Int
+  payload           Json
+  hash              String
+  createdByPersonId String   @db.Uuid
+  createdAt         DateTime @default(now()) @db.Timestamptz(6)
+
+  payment Payment @relation(fields: [paymentId], references: [id])
+
+  @@unique([paymentId, revisionNo])
+  @@schema("public")
+}
+
+/// One row per business instruction; `businessKey` is unique per corporate so the same
+/// supplier row / salary line can never settle twice (BAT-02, BAT-04, PYR-01).
+model BusinessInstruction {
+  id                   String           @id @default(uuid(7)) @db.Uuid
+  bankId               String           @db.Uuid
+  corporateId          String           @db.Uuid
+  businessKey          String
+  kind                 InstructionKind
+  paymentId            String?          @unique @db.Uuid
+  batchId              String?          @db.Uuid
+  moduleId             String
+  transactionType      TransactionType
+  rail                 Rail
+  sourceAccountId      String           @db.Uuid
+  sourceCoreRef        String
+  destinationScheme    String?
+  destinationReference String?
+  destinationName      String?
+  destinationCoreRef   String?
+  amountMinor          BigInt
+  feeMinor             BigInt
+  currency             String
+  /// Payroll rows: amount/destination must never leave the restricted projection.
+  confidential         Boolean          @default(false)
+  /// Statement grouping reference (payroll run) — see PYR-02.
+  groupRef             String?
+  narrative            String
+  makerMembershipId    String           @db.Uuid
+  state                InstructionState @default(PENDING)
+  failureCode          String?
+  reservationCycle     Int              @default(0)
+  currentAttemptNo     Int              @default(0)
+  settledAt            DateTime?        @db.Timestamptz(6)
+  returnedAt           DateTime?        @db.Timestamptz(6)
+  correlationId        String?
+  createdAt            DateTime         @default(now()) @db.Timestamptz(6)
+  updatedAt            DateTime         @updatedAt @db.Timestamptz(6)
+  version              Int              @default(1)
+
+  payment      Payment?           @relation(fields: [paymentId], references: [id])
+  attempts     ExecutionAttempt[]
+  reservations LimitReservation[]
+
+  @@unique([corporateId, businessKey])
+  @@index([bankId, state, updatedAt])
+  @@index([batchId, state])
+  @@schema("public")
+}
+
+/// An execution attempt owns the stable core reference used for every retry and inquiry (PAY-04).
+model ExecutionAttempt {
+  id                 String        @id @default(uuid(7)) @db.Uuid
+  bankId             String        @db.Uuid
+  corporateId        String        @db.Uuid
+  instructionId      String        @db.Uuid
+  attemptNo          Int
+  executionReference String        @unique
+  holdReference      String        @unique
+  railReference      String?       @unique
+  batchRowId         String?       @db.Uuid
+  state              AttemptState  @default(INTENT)
+  unknownPhase       AttemptPhase?
+  failureCode        String?
+  coreReference      String?
+  bookedAt           DateTime?     @db.Timestamptz(6)
+  bookedBusinessDate DateTime?     @db.Date
+  inquiryCount       Int           @default(0)
+  lastInquiryAt      DateTime?     @db.Timestamptz(6)
+  lastInquiryResult  String?
+  /// instructionId while the attempt is live; NULL once definitively failed. One live attempt per instruction.
+  activeKey          String?       @unique
+  createdAt          DateTime      @default(now()) @db.Timestamptz(6)
+  updatedAt          DateTime      @updatedAt @db.Timestamptz(6)
+  version            Int           @default(1)
+
+  instruction BusinessInstruction @relation(fields: [instructionId], references: [id])
+
+  @@unique([instructionId, attemptNo])
+  @@index([bankId, state, updatedAt])
+  @@index([bookedBusinessDate])
+  @@schema("public")
+}
+
+/// Usage bucket per scope and business window; consumed + reserved are both counted (LIM-02/03).
+model UsageCounter {
+  id            String      @id @default(uuid(7)) @db.Uuid
+  bankId        String      @db.Uuid
+  corporateId   String      @db.Uuid
+  /// "TYPE:<module>:<type>" | "MODULE:<module>" | "CORPORATE" | "USER:<membershipId>"
+  scopeKey      String
+  period        LimitPeriod
+  windowStart   DateTime    @db.Date
+  currency      String
+  consumedMinor BigInt      @default(0)
+  reservedMinor BigInt      @default(0)
+  consumedItems Int         @default(0)
+  reservedItems Int         @default(0)
+  updatedAt     DateTime    @updatedAt @db.Timestamptz(6)
+
+  reservations LimitReservation[]
+
+  @@unique([corporateId, scopeKey, period, windowStart, currency])
+  @@schema("public")
+}
+
+model LimitReservation {
+  id            String           @id @default(uuid(7)) @db.Uuid
+  instructionId String           @db.Uuid
+  counterId     String           @db.Uuid
+  cycle         Int
+  amountMinor   BigInt
+  items         Int              @default(1)
+  state         ReservationState @default(RESERVED)
+  createdAt     DateTime         @default(now()) @db.Timestamptz(6)
+  updatedAt     DateTime         @updatedAt @db.Timestamptz(6)
+
+  instruction BusinessInstruction @relation(fields: [instructionId], references: [id])
+  counter     UsageCounter        @relation(fields: [counterId], references: [id])
+
+  @@unique([instructionId, counterId, cycle])
+  @@index([counterId, state])
+  @@schema("public")
+}
+
+/// Generic, append-only status timeline for payments, batches, deposits and executions (APR-01).
+model TimelineEvent {
+  id            String   @id @default(uuid(7)) @db.Uuid
+  bankId        String   @db.Uuid
+  corporateId   String?  @db.Uuid
+  aggregateType String
+  aggregateId   String   @db.Uuid
+  at            DateTime @default(now()) @db.Timestamptz(6)
+  code          String
+  fromState     String?
+  toState       String?
+  actorPersonId String?  @db.Uuid
+  actorService  String?
+  reference     String?
+  detail        Json?
+
+  @@index([aggregateType, aggregateId, at])
+  @@schema("public")
+}
+
+/// Gap-tolerant human reference sequences (e.g. PAY-QTD-2026-000001).
+model ReferenceSequence {
+  scopeKey  String @id
+  nextValue BigInt @default(1)
+
+  @@schema("public")
+}

@@ -1,0 +1,86 @@
+// One approval mechanism for every maker-checker decision (APR-01..03, AGR-02, COL-02, OPS-01).
+
+enum ApprovalClass {
+  PAYMENT
+  BULK
+  PAYROLL
+  CORPORATE_ADMIN
+  BANK_GOVERNANCE
+  BANK_REPAIR
+  BRANCH_DEPOSIT
+
+  @@schema("public")
+}
+
+enum ApprovalState {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+  SUPERSEDED
+  EXPIRED
+
+  @@schema("public")
+}
+
+enum VoteDecision {
+  APPROVE
+  REJECT
+
+  @@schema("public")
+}
+
+model ApprovalRequest {
+  id                String        @id @default(uuid(7)) @db.Uuid
+  bankId            String        @db.Uuid
+  corporateId       String?       @db.Uuid
+  klass             ApprovalClass
+  targetType        String
+  targetId          String        @db.Uuid
+  targetRevision    Int
+  /// Hash of the exact immutable payload the votes are bound to.
+  payloadHash       String
+  /// Redacted display summary (never contains payroll row detail).
+  summary           Json
+  makerPersonId     String        @db.Uuid
+  requiredApprovals Int
+  approvalsCount    Int           @default(0)
+  state             ApprovalState @default(PENDING)
+  policyVersion     Int           @default(1)
+  policySnapshot    Json?
+  sourceAccountId   String?       @db.Uuid
+  branchId          String?       @db.Uuid
+  amountMinor       BigInt?
+  currency          String?
+  /// "<targetType>:<targetId>" while PENDING, NULL afterwards: one live request per target.
+  activeKey         String?       @unique
+  expiresAt         DateTime?     @db.Timestamptz(6)
+  decidedAt         DateTime?     @db.Timestamptz(6)
+  createdAt         DateTime      @default(now()) @db.Timestamptz(6)
+  updatedAt         DateTime      @updatedAt @db.Timestamptz(6)
+  version           Int           @default(1)
+
+  votes ApprovalVote[]
+
+  @@index([bankId, corporateId, state, klass])
+  @@index([targetType, targetId])
+  @@schema("public")
+}
+
+/// Unique per request and human: a repeated click can never add a second vote (APR-02).
+model ApprovalVote {
+  id                String       @id @default(uuid(7)) @db.Uuid
+  approvalRequestId String       @db.Uuid
+  personId          String       @db.Uuid
+  membershipId      String       @db.Uuid
+  decision          VoteDecision
+  reason            String?
+  policyVersion     Int
+  createdAt         DateTime     @default(now()) @db.Timestamptz(6)
+
+  approvalRequest ApprovalRequest @relation(fields: [approvalRequestId], references: [id])
+  person          Person          @relation(fields: [personId], references: [id])
+
+  @@unique([approvalRequestId, personId])
+  @@schema("public")
+}
