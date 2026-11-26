@@ -1,0 +1,1035 @@
+Al Qarib GTB & Corporate Banking – Detailed Feature Catalogue
+
+
+
+
+Al Qarib GTB & Corporate Banking –
+Detailed Feature Catalogue
+  ​Nov 23, 2026 · ​@Mohamed Adel
+
+
+
+Purpose and scope
+This catalogue defines 12 domains and 30+ separate modules for Al Qarib's corporate
+banking and Global Transaction Banking (GTB) offer. Each module is sold and switched on
+only through a signed bank agreement, with its own transaction types, user limits and
+corporate daily and monthly limits.
+
+        Segments: Large, Medium and Small corporates each get a default package; the bank
+        admin can override any value per agreement.
+        Rails: instant payments run on LYPay, domestic batch and cheques on ACH, large
+        values on RTGS, cross-border on SWIFT.
+        Reading a module: every spec has the same blocks: description, transaction types,
+        users and roles, agreement terms, limits, controls.
+        Status: all limits and rail ceilings are parameters to be set; none are final figures. Items
+        awaiting CBL confirmation are listed in the last section.
+
+
+Module summary
+The catalogue has 33 modules in 12 domains. "Limit basis" shows what the daily and
+monthly limits count: money moved, number of items, or outstanding exposure.
+
+
+  #           Module                                      Transaction types               Rail       Limit basis
+
+  1.1         Instant payments                            Account to account, to          LYPay      Amount
+                                                          wallet, QR payment
+
+  1.2         ACH                                         Credit transfer, direct debit   ACH        Amount,
+                                                          (mandate), cheque clearing                 items
+
+  1.3         RTGS                                        High-value transfer,            RTGS       Amount
+                                                          interbank settlement
+
+  1.4         SWIFT payments                              MT103, MT101 initiation,        SWIFT      Amount per
+                                                          pacs.008, gpi tracking                     currency
+
+  1.5         Own-account and                             Internal, standing order,       Internal   Amount
+              scheduled transfers                         future-dated
+
+
+
+
+                                                                                                               Page 1 of 21
+Al Qarib GTB & Corporate Banking – Detailed Feature Catalogue
+
+
+
+
+  #           Module                                      Transaction types              Rail       Limit basis
+
+  2.1         Bulk transfers                              Pay group, Excel upload,       LYPay,     Batch total,
+                                                          repeat batch, recurring        ACH        items
+
+  2.2         Payroll                                     Salary batch, allowance,       ACH,       Batch total,
+                                                          bonus, scheduled run,          LYPay      items
+                                                          instant salary (Your Salary
+                                                          Instantly)
+
+  3.1         Customer ID and                             Add, import, edit customer     n/a        n/a
+              collection list
+
+  3.2         Branch deposits by                          Cash deposit, cheque           Branch,    Amount per
+              customer code                               deposit                        ACH        deposit
+
+  3.3         Deposit summary and                         Search, export, PDF receipt    n/a        n/a
+              receipts
+
+  3.4         Payment links                               One-time, reusable, invoice    LYPay,     Amount
+                                                          link                           card
+
+  3.5         QR collections                              Static, dynamic QR             LYPay      Amount
+
+  4.1         Virtual account                             Create, assign, close,         Internal   Items
+              structure                                   hierarchy
+
+  4.2         Auto-reconciliation and                     Match, sweep to master,        Internal   Amount
+              sweeping                                    report
+
+  5.1         Certified cheque                            Issue, hold, release, return   ACH        Amount held
+
+  5.2         LG/LC escrow                                Hold, release on event,        ACH,       Amount held
+                                                          return                         RTGS
+
+  6.1         Documentary                                 Documents against              SWIFT,     Exposure
+              collections                                 payment, against               ACH
+                                                          acceptance
+
+  6.2         Letters of credit                           Issue, amend, advise, settle   SWIFT      Exposure
+
+  6.3         Guarantees                                  Issue, amend, claim, release   SWIFT      Exposure
+
+  7.1         Cash concentration                          Pooling, sweeping, target      Internal   Amount
+                                                          balance
+
+  7.2         Liquidity alerts                            Balance, threshold, forecast   n/a        n/a
+                                                          alert
+
+  8.1         Cheque issuance                             Issue, stop, cancel            ACH        Amount,
+                                                                                                    items
+
+
+
+                                                                                                              Page 2 of 21
+Al Qarib GTB & Corporate Banking – Detailed Feature Catalogue
+
+
+
+
+  #           Module                                      Transaction types              Rail       Limit basis
+
+  8.2         Cheque management                           Status, positive pay, return   ACH        Items
+
+  9.1         Corporate debit and                         Issue, load, block, limit      Card       Amount
+              prepaid cards                                                              network
+
+  9.2         Corporate credit cards                      Issue, limit, statement,       Card       Credit limit
+                                                          repay                          network
+
+  10.1        API connectivity                            Payments, balances,            API        Calls
+                                                          statements, status,
+                                                          webhooks, consent
+
+  10.2        Host-to-host and file                       Payment files, statement       File       Items
+              exchange                                    files
+
+  10.3        ERP connectors                              Payables, receivables,         API        n/a
+                                                          reconciliation
+
+  11.1        Statements and                              Intraday, end of day, custom   n/a        n/a
+              reports
+
+  11.2        Cash forecasting                            Inflow, outflow projection     n/a        n/a
+
+  12.1        Users and roles                             Create, assign, suspend        n/a        n/a
+
+  12.2        Approval matrix                             Amount bands, checker          n/a        n/a
+                                                          count
+
+  12.3        Agreement and limits                        Agreement, module on/off,      n/a        n/a
+              console                                     limits
+
+
+
+
+Platform model: agreements, limits and roles
+No module works until the bank admin activates it in a signed agreement, and every
+transaction is checked against five limit levels; the lowest applicable one wins.
+
+
+Bank agreement (per corporate)
+
+  Field                                            Content
+
+  Corporate and segment                            Legal entity, Large, Medium or Small
+
+  Modules enabled                                  Any of the 33 modules, each on or off
+
+  Linked accounts                                  Which accounts each module may debit or credit
+
+
+
+
+                                                                                                             Page 3 of 21
+Al Qarib GTB & Corporate Banking – Detailed Feature Catalogue
+
+
+
+
+  Field                                            Content
+
+  Allowed transaction types                        A subset per module, for example ACH credit only
+
+  Fees                                             Tariff per module and transaction type
+
+  Limits                                           Per transaction, daily and monthly, per module and
+                                                   overall
+
+  Approval rules                                   Default maker-checker bands, editable by the
+                                                   corporate admin within bank bounds
+
+  Validity and status                              Start and end dates, draft, active, suspended,
+                                                   closed
+
+  Signatories                                      Authorised signers who accepted the terms
+
+  Bank approval                                    Bank admin maker-checker before any activation
+                                                   or limit change
+
+
+
+Limit levels (checked in this order)
+   1. Rail ceiling: a system parameter per rail, such as the ACH amount cap, held as a
+       configurable value until CBL confirms it.
+   2. Module and transaction-type limit: per transaction, daily and monthly, set in the
+      agreement.
+   3. Corporate limit: daily and monthly totals per module, plus an overall corporate total
+       across all modules.
+   4. User limit: per transaction and per day, set by the corporate admin per user, never
+       above the corporate limit.
+   5. Approval matrix: amount bands decide how many checkers must approve before
+       release.
+
+Limits for trade finance and credit cards count outstanding exposure instead of money
+moved per day.
+
+
+Roles
+
+  Side                   Roles
+
+  Corporate              Admin, Maker, Checker, Finance or Accountant,
+                         Payroll officer, Treasurer, Viewer
+
+
+
+
+                                                                                                        Page 4 of 21
+Al Qarib GTB & Corporate Banking – Detailed Feature Catalogue
+
+
+
+
+  Side                   Roles
+
+  Bank                   Relationship manager, Branch teller, Branch
+                         manager, Payments operations, Trade operations,
+                         Compliance, Bank admin
+
+  Platform               CBL admin, Notary (external)
+
+
+The corporate Admin manages users and user limits only inside the bounds the bank
+admin set in the agreement.
+
+
+Domain 1: Payments and clearing
+Five modules cover every way a corporate moves money, each on the rail that fits its value
+and speed. Every module also carries the standard agreement terms and the five limit
+levels described above.
+
+
+  Module                             What it does               Users and roles        Controls and edges
+
+  1.1 Instant                        Real-time transfer to      Maker initiates,       Beneficiary name
+  payments                           any account or             Checker approves,      check before release;
+  (LYPay)                            wallet and QR              Treasurer for large    corporate ceilings must
+                                     payment, around the        items                  be agreed with CBL
+                                     clock                                             because published
+                                                                                       LYPay ceilings are for
+                                                                                       individuals
+
+  1.2 ACH                            Domestic network           Maker, Checker,        Mandate register with
+                                     for credit transfers,      Finance for            start, end and per-
+                                     direct debits under        mandates, Payments     debit cap; return
+                                     a mandate, and             operations at the      handling; cut-off times;
+                                     cheque clearing            bank                   amount cap per item
+                                                                                       held as a parameter
+                                                                                       pending CBL
+
+  1.3 RTGS                           High-value same-           Treasurer initiates,   Four-eyes always on;
+                                     day transfer               two Checkers           cut-off and holiday
+                                     between banks              approve, Payments      calendar; reconciliation
+                                                                operations releases    to CBL settlement
+
+
+
+
+                                                                                                         Page 5 of 21
+Al Qarib GTB & Corporate Banking – Detailed Feature Catalogue
+
+
+
+
+  Module                             What it does                  Users and roles         Controls and edges
+
+  1.4 SWIFT                          Cross-border                  Maker, Checker,         ISO 20022 structured
+  payments                           transfers, corporate          Treasurer, Payments     addresses; sanctions
+                                     initiation by MT101,          operations,             screening; purpose
+                                     status tracking               Compliance              code; FX deal
+                                                                                           reference; gpi tracking
+                                                                                           where the
+                                                                                           correspondent
+                                                                                           supports it
+
+  1.5 Own-account                    Moves between the             Maker, Checker,         Skip or fail rule when
+  and scheduled                      corporate's own               Finance                 balance is short; next-
+  transfers                          accounts, standing                                    run preview; editable
+                                     orders and future-                                    until cut-off
+                                     dated payments
+
+
+Market edges: structured payment data is moving from a bank-side compliance task to
+corporate value, and real-time rails are being used for liquidity visibility (Standard
+Chartered, Bottomline).
+
+
+Domain 2: Bulk transfers and payroll
+Both modules share one batch engine, and the agreement decides the rules: row cap,
+wallet or bank-account beneficiaries, and whether maker-checker applies.
+
+
+  Module                   What it does                         Users and roles          Controls and edges
+
+  2.1 Bulk                 Pay a saved group,                   Maker uploads,           Row-level validation with
+  transfers                upload an Excel file, or             Checker approves,        a downloadable error
+                           repeat a previous                    Finance reviews          report and "continue with
+                           batch; one currency                  results                  valid rows only"; preview
+                           per batch, taken from                                         of count, total, fee,
+                           the source account                                            execution time and
+                                                                                         balance after; failed-row
+                                                                                         retry; history; one-time or
+                                                                                         recurring runs (weekly,
+                                                                                         monthly, end after N
+                                                                                         runs, skip on insufficient
+                                                                                         balance)
+
+
+
+
+                                                                                                              Page 6 of 21
+Al Qarib GTB & Corporate Banking – Detailed Feature Catalogue
+
+
+
+
+  Module                   What it does                         Users and roles           Controls and edges
+
+  2.2 Payroll              Salary and allowance                 Payroll officer           Instant salary mode (see
+                           batches from a payroll               prepares, Checker         below); salary-date
+                           template, scheduled                  approves, Treasurer       calendar; employee
+                           on pay day                           funds the account         master list; duplicate and
+                                                                                          amount-change alerts;
+                                                                                          confidential employee
+                                                                                          data limited to Payroll
+                                                                                          officer; payslip reference
+                                                                                          per line
+
+
+Row cap defaults are a parameter: the wallet journey allows 200 rows per file and the
+latest wallet stories use 100, so the corporate default is set per agreement and per
+segment. Rail choice follows size: LYPay for small urgent batches, ACH for large batches,
+subject to the ACH cap pending CBL.
+
+
+Instant salary (Your Salary Instantly, ‫)راتبك لحظي‬
+Module 2.2 includes an instant salary mode aligned with the CBL project "Your Salary
+Instantly", a national project under which CBL announces each month's salary receipt and
+the start of execution (CBL). The features below are the platform's design for supporting
+that mode.
+
+
+  Feature                            What it does                                     Users and roles
+
+  Bank-data                          Validates every employee account                 Payroll officer, Payments
+  matching                           against core banking before pay day              operations
+                                     and lists mismatches
+
+  Instant crediting                  Credits each employee on release; no             Treasurer releases, Checker
+                                     waiting for the next ACH cycle                   approves
+
+  Salary                             Basic salary, allowances, deductions             Payroll officer, employee view
+  breakdown                          and correction differences on each line
+
+  Pay-day                            Credited, pending and failed counts              Payroll officer, Finance,
+  dashboard                          per entity, with a retry queue                   Viewer
+
+  CBL reporting                      Salary execution indicators sent to or           Bank admin, CBL admin
+                                     reconciled with CBL
+
+
+Corporate customers can use the same mode for their own staff, subject to the rail
+ceilings in the limit levels. The interface with CBL (file or API, format, settlement timing) is
+not public in the pages read, so it is listed under open points.
+
+
+
+                                                                                                                  Page 7 of 21
+Al Qarib GTB & Corporate Banking – Detailed Feature Catalogue
+
+
+
+
+Domain 3: Collections and cash monitoring
+This domain lets a corporate collect from its customers and see every deposit against a
+customer. The Customer ID, a unique company-assigned code, is what a depositor gives at
+the branch.
+
+
+
+
+                                                                                   Page 8 of 21
+Al Qarib GTB & Corporate Banking – Detailed Feature Catalogue
+
+
+
+
+  Module                              What it does              Users and roles        Controls and edges
+
+  3.1 Customer ID                     Customer list with        Corporate Admin,       Customer ID must be
+  and collection list                 name, mobile (+218),      Finance                unique per corporate;
+                                      Customer ID,                                     import shows row
+                                      company, industry,                               errors before commit;
+                                      tags and billing                                 delete blocked if open
+                                      address; Excel                                   invoices exist
+                                      import wizard;
+                                      search, filter, sort,
+                                      export, bulk delete
+
+  3.2 Branch                          Anyone can deposit        Branch teller enters   Teller screen shows
+  deposits by                         cash or a cheque at       code and amount,       corporate and
+  customer code                       any branch by giving      Branch manager         customer name for
+                                      the Customer ID; the      approves above a       confirmation; per-
+                                      corporate account is      threshold, Finance     deposit cap and cash-
+                                      credited and the          sees the credit        reporting threshold;
+                                      customer is matched                              cheque deposits
+                                                                                       credit after clearing;
+                                                                                       printed or PDF receipt
+
+  3.3 Deposit                         Deposits per              Finance, Viewer        Receipt carries a
+  summary and                         customer for the last                            unique reference and
+  receipts                            90 days, search by                               bank stamp; export is
+                                      reference, date                                  logged in the audit trail
+                                      range, export,
+                                      receipt download
+
+  3.4 Payment links                   Generate a pay-by-        Finance creates,       Expiry date and single-
+                                      link for a one-time       Maker for bulk links   use option; paid status
+                                      amount, a reusable                               feeds the customer
+                                      amount or a specific                             page; amount and link
+                                      invoice; share by                                limits from the
+                                      SMS, WhatsApp or                                 agreement
+                                      email
+
+  3.5 QR collections                  Static QR for a           Finance, branch        Dynamic QR carries
+                                      counter and dynamic       staff of the           the invoice reference
+                                      QR per invoice            corporate              for auto-matching
+
+
+The customer page shows number of payments, paid and due amounts, deposits, pending
+invoices and an activity tab. The collection-method selector in the reference design
+("through the bank" or "through other banks") is kept as a setting per customer; for Libya,
+
+
+
+
+                                                                                                          Page 9 of 21
+Al Qarib GTB & Corporate Banking – Detailed Feature Catalogue
+
+
+
+
+"other banks" means collection through another licensed bank's branch or channel, to be
+confirmed.
+
+Market edge: request-for-payment, the pull direction of real-time payments, is starting to
+reach commercial use (Modern Treasury).
+
+
+Domain 4: Virtual account management
+Virtual accounts let one real master account carry many identifiable sub-accounts, so
+every incoming payment is matched to a customer, branch or invoice without manual
+work. Adoption is growing fast: one industry study puts it at 10% of corporates in 2023
+and a projected 29% by 2026 (Datos Insights), and reconciliation is where treasurers see
+the most value from AI (Deutsche Bank, citing Coalition Greenwich).
+
+
+  Module                                What it does            Users and roles       Controls and edges
+
+  4.1 Virtual account                   Create virtual          Corporate Admin       Balances sit in the
+  structure                             accounts under a        creates, Finance      master account; each
+                                        master account, in a    manages, Bank         virtual account has a
+                                        hierarchy of entity,    admin sets the        unique number or
+                                        branch, customer or     maximum number        reference; closing
+                                        invoice; assign,                              requires zero open
+                                        rename, close                                 items; maximum
+                                                                                      count and depth are
+                                                                                      agreement
+                                                                                      parameters
+
+  4.2 Auto-                             Incoming payments       Finance, Treasurer,   Unmatched items go
+  reconciliation and                    are posted to the       Payments operations   to a suspense queue
+  sweeping                              matching virtual                              with an ageing alert;
+                                        account by number                             reports per virtual
+                                        or reference;                                 account; sweep rules
+                                        balances can sweep                            by time or threshold;
+                                        to the master                                 works for ACH, LYPay,
+                                        account on a                                  branch and RTGS
+                                        schedule                                      credits
+
+
+Virtual accounts are a tracking layer, not separate deposits: compliance, interest and
+limits are applied at the master account, and the virtual account only adds a transaction-
+level limit when the agreement sets one. Branch deposits by customer code (module 3.2)
+can post straight into a virtual account.
+
+
+
+
+                                                                                                     Page 10 of 21
+Al Qarib GTB & Corporate Banking – Detailed Feature Catalogue
+
+
+
+
+Domains 5 and 6: Conditional payments and trade finance
+Conditional payments hold a payer's money and release it on an agreed event, based on
+the Central Bank of Libya (CBL) draft Digital Documentary Credit v1.1. Trade finance
+covers import and export instruments between companies; letters of credit were 89.1% of
+accepted foreign-currency applications at CBL from January to May 2024, so this domain
+matters in Libya.
+
+
+Domain 5: Conditional payments
+
+  Module                    What it does                        Users and roles            Controls and edges
+
+  5.1 Certified             Funds are held and a                Maker requests,            States: held, released,
+  cheque                    cheque is certified for a           Checker approves,          returned, expired;
+                            named beneficiary;                  Payments operations        hold amount reduces
+                            released on                         certifies, Branch teller   the available balance;
+                            presentation, returned              presents                   limit counts amount
+                            on expiry                                                      held
+
+  5.2 LG/LC                 Buyer funds are held                Buyer (issuer), Seller     Option A: ACH debit
+  escrow                    for a purchase such as              (beneficiary), Notary,     under a standing
+                            property; a notary                  CBL admin, Compliance      mandate, no bank
+                            confirms the event and                                         integration. Option B:
+                            the platform releases to                                       core-banking APIs.
+                            the seller or returns to                                       Interbank settlement
+                            the buyer                                                      always through ACH
+                                                                                           and RTGS, never
+                                                                                           instant; dispute and
+                                                                                           return states; ACH
+                                                                                           amount cap and return
+                                                                                           window to be
+                                                                                           confirmed with CBL
+
+
+
+
+                                                                                                            Page 11 of 21
+Al Qarib GTB & Corporate Banking – Detailed Feature Catalogue
+
+
+
+
+Domain 6: Trade finance
+
+  Module                            What it does                Users and roles     Controls and edges
+
+  6.1 Documentary                   Exporter ships and          Corporate Trade     Follows ICC rules for
+  collections                       hands documents to          officer, Checker,   collections;
+                                    its bank, which sends       Trade operations,   document checklist;
+                                    them to the importer's      Compliance          tracking of status;
+                                    bank; the importer                              sanctions and goods
+                                    pays (documents                                 screening; limit
+                                    against payment) or                             counts outstanding
+                                    accepts a draft                                 exposure
+                                    (documents against
+                                    acceptance) before
+                                    getting the
+                                    documents
+
+  6.2 Letters of                    Issue, amend, advise        Trade officer,      SWIFT trade
+  credit                            and settle import and       Treasurer, Trade    messages; document
+                                    export letters of           operations,         examination;
+                                    credit                      Compliance          discrepancy handling;
+                                                                                    FX allocation
+                                                                                    reference from CBL
+                                                                                    where required
+
+  6.3 Guarantees                    Issue, amend, claim         Trade officer,      Expiry and claim-date
+                                    and release bank            Treasurer, Trade    alerts; counter-
+                                    guarantees (bid,            operations,         guarantee or cash
+                                    performance, advance        Compliance          margin; limit counts
+                                    payment)                                        exposure
+
+
+The scope of the CBL conditional-payments product is escrow-style; it is not the same as
+trade documentary collections, so the two are kept as separate modules with separate
+agreements.
+
+
+
+
+                                                                                                    Page 12 of 21
+Al Qarib GTB & Corporate Banking – Detailed Feature Catalogue
+
+
+
+
+Domains 7 to 12: Liquidity, cheques, cards, connectivity, insight
+and administration
+
+  Module                               What it does             Users and roles       Controls and edges
+
+  7.1 Cash                             Pool or sweep            Treasurer, Finance    Rules approved by
+  concentration                        balances from sub-                             Checker; sweep limits
+                                       accounts into a                                per transaction and
+                                       master account to a                            per day; works with
+                                       target balance, by                             virtual accounts (4.2)
+                                       schedule or
+                                       threshold
+
+  7.2 Liquidity alerts                 Alerts when a            Treasurer, Finance,   Channels: app, SMS,
+                                       balance rises above      Viewer                email; thresholds per
+                                       or falls below a                               account
+                                       threshold, or a
+                                       forecast shortfall
+                                       appears
+
+  8.1 Cheque                           Issue, stop and          Maker, Checker,       Cheque book
+  issuance                             cancel corporate         Finance               inventory; stop-
+                                       cheques                                        payment cut-off; limit
+                                                                                      by amount and
+                                                                                      number of cheques
+
+  8.2 Cheque                           Track status of          Finance, Payments     Positive pay
+  management                           issued and received      operations            compares issued list
+                                       cheques, positive                              to presented
+                                       pay, handle returns                            cheques through
+                                                                                      ACH clearing;
+                                                                                      returned-cheque
+                                                                                      reasons
+
+  9.1 Corporate debit                  Issue cards to staff,    Corporate Admin,      Per-card and per-
+  and prepaid cards                    load, block, set card    Finance, cardholder   merchant-type limits;
+                                       limits                                         instant block;
+                                                                                      counted inside the
+                                                                                      corporate daily and
+                                                                                      monthly limits
+
+
+
+
+                                                                                                      Page 13 of 21
+Al Qarib GTB & Corporate Banking – Detailed Feature Catalogue
+
+
+
+
+  Module                               What it does             Users and roles       Controls and edges
+
+  9.2 Corporate                        Credit card with a       Corporate Admin,      Limit counts
+  credit cards                         company limit,           Finance, Credit       outstanding credit;
+                                       statements and           officer at the bank   credit approval by the
+                                       repayment                                      bank; links to the
+                                                                                      Credit Card epic
+
+  10.1 API                             Open API: payments,      Corporate IT, Bank    Keys per corporate;
+  connectivity                         balances, statements     integration team      call-rate limits;
+                                       and status through                             sandbox; payment
+                                       secure REST APIs,                              calls obey all limit
+                                       with webhooks (see                             levels
+                                       the Open API
+                                       section)
+
+  10.2 Host-to-host                    Automated payment        Corporate IT,         File signing;
+  and file exchange                    and statement files      Payments              duplicate-file check;
+                                       between corporate        operations            supports ISO 20022
+                                       systems and the                                and MT formats
+                                       bank
+
+  10.3 ERP                             Payables, receivables    Finance, Corporate    Reconciliation by
+  connectors                           and reconciliation       IT                    invoice reference;
+                                       linked to the                                  59% of treasury
+                                       corporate's                                    leaders name ERP
+                                       accounting system                              and platform
+                                                                                      integration as a top
+                                                                                      payment complexity
+                                                                                      (Accenture)
+
+  11.1 Statements                      Intraday and end-of-     Finance, Viewer,      Export logged; report
+  and reports                          day statements,          Compliance            access follows
+                                       custom reports,                                account permissions
+                                       scheduled delivery
+
+  11.2 Cash                            Projects inflows and     Treasurer, Finance    Forecast is advisory;
+  forecasting                          outflows from                                  AI suggestions need
+                                       scheduled payments,                            human confirmation
+                                       invoices and history                           before any action
+
+  12.1 Users and                       Create users, assign     Corporate Admin       Admin works inside
+  roles                                roles and accounts,                            agreement bounds;
+                                       suspend                                        role changes need a
+                                                                                      Checker
+
+
+
+
+                                                                                                      Page 14 of 21
+Al Qarib GTB & Corporate Banking – Detailed Feature Catalogue
+
+
+
+
+  Module                               What it does                Users and roles           Controls and edges
+
+  12.2 Approval                        Amount bands and            Corporate Admin,          Bank sets minimum
+  matrix                               number of checkers          Bank admin                rules; no user
+                                       per module and                                        approves their own
+                                       transaction type                                      item
+
+  12.3 Agreement                       Create agreements,          Bank admin (maker         Every change needs a
+  and limits console                   switch modules on or        and checker),             second bank
+                                       off, set transaction        Relationship              approver; full change
+                                       types, fees and limits      manager                   history; effective-
+                                       per level                                             dated limits
+
+
+
+
+Open API layer
+Every module is also an API product: the web and mobile channels call the same APIs that
+corporate systems and approved partners call, so nothing is available in the screen that is
+missing from the API. Access to each API family follows the bank agreement, and every
+API call is checked against the same five limit levels and approval rules as a screen action.
+
+
+API families
+
+  Family                                      Operations                                              Modules
+
+  Accounts and balances                       List accounts, balance, intraday and end-of-day         4.1, 4.2, 11.1
+                                              statements, virtual account balances
+
+  Payment initiation                          Create, status, cancel for instant, ACH, RTGS,          1.1 to 1.5
+                                              SWIFT, own and scheduled transfers
+
+  Bulk and payroll                            Create batch, validate, status, row results, retry,     2.1, 2.2
+                                              instant salary status
+
+  Collections                                 Customers, branch deposits and receipts, payment        3.1 to 3.5
+                                              links, QR codes
+
+  Conditional payments                        Create, hold status, release, return                    5.1, 5.2
+
+  Trade                                       Request, document upload, status                        6.1 to 6.3
+
+  Limits and agreement                        Read modules enabled, limits and usage; no write        12.3
+                                              access
+
+  Approvals                                   List pending items, approve or reject as a Checker      12.2
+
+
+
+
+                                                                                                              Page 15 of 21
+Al Qarib GTB & Corporate Banking – Detailed Feature Catalogue
+
+
+
+
+  Family                                      Operations                                          Modules
+
+  Events (webhooks)                           Payment status, deposit received, batch finished,   All
+                                              limit threshold reached
+
+
+
+Standards and rules
+       Style: REST and JSON, published as an OpenAPI specification, with ISO 20022 data
+       elements in payment payloads.
+       Security: OAuth 2.0 with OpenID Connect and mutual TLS; the FAPI profile (a
+       hardened OAuth profile from the OpenID Foundation, adopted as the security profile
+       of the UK Open Banking standard) is the target (Open Banking UK, Nordic APIs).
+       Consent and strong authentication: reuse the Berlin Group NextGenPSD2 pattern,
+       which defines redirect, OAuth2, decoupled and embedded approaches (Berlin Group
+       overview); a payment created by API still needs its checker approval before release.
+       Safe retries: an idempotency key on every create call, so a repeated request never
+       pays twice.
+       Versioning: version in the path, with at least two versions live and a notice period
+       before retirement.
+       Plans: call-rate and daily call limits per segment, set in the agreement.
+       Webhooks: signed, retried and logged, with a replay option.
+       Developer experience: sandbox with test data, public API reference, test credentials
+       per corporate, and a change log.
+       Audit: every call carries a correlation ID and is traceable from the API gateway to the
+       core posting.
+
+The CBL national strategy for digital payments points toward open banking and a national
+switch, so the API layer is built to be exposed beyond individual corporates later (CBL
+strategy).
+
+
+Core banking integration (Temenos Transact and Oracle
+FLEXCUBE)
+The corporate platform is a channel: the core banking system stays the system of record
+for balances and postings, and the platform owns agreements, limits, approvals and the
+corporate experience. The platform talks to the core only through an adapter layer, so a
+bank on Temenos Transact (formerly T24) or on Oracle FLEXCUBE gets the same
+modules.
+
+
+
+
+                                                                                                        Page 16 of 21
+Al Qarib GTB & Corporate Banking – Detailed Feature Catalogue
+
+
+
+
+Guidelines for every integration
+   1. One canonical model: the platform defines its own account, payment, hold and
+       customer objects; each core gets an adapter that maps to and from them, so a core
+       change never touches modules.
+   2. Core posts, platform decides: limits, approval bands and agreement checks run in the
+       platform before any call to the core; the core still applies its own overdraft and
+       account-status rules.
+   3. Synchronous for inquiry and posting, asynchronous for status: balance, account
+       validation and internal postings are real-time calls; rail submission, bulk and payroll
+       results come back as events.
+   4. Idempotency everywhere: every posting carries a unique reference so a retry returns
+       the original result instead of posting twice.
+   5. Holds on the core: conditional payments and certified cheques place a lien or hold on
+       the core account, then release or return it.
+   6. Reconcile daily: end-of-day comparison of platform records and core postings, with a
+      break report to Payments operations.
+   7. Cut-offs and calendar: the platform follows the core's business date, holiday calendar
+       and end-of-day window, and queues requests during the core's offline period.
+   8. Failure handling: a clear error map from core codes to platform messages, a retry
+       queue, and a manual repair screen for the bank.
+   9. Security: private network or mutual TLS between platform and core, service accounts
+       with least privilege, no corporate credentials in the core.
+ 10. Release discipline: pin to the bank's core release, run contract tests in a sandbox, and
+       repeat performance tests at the peak of salary days.
+
+
+What each core offers
+
+                                       Temenos Transact (T24)             Oracle FLEXCUBE (FCUBS)
+
+  Positioning                          T24 was renamed Temenos            Core banking behind the Oracle
+                                       Transact; described as API-first   Banking APIs (OBAPI) digital
+                                       and cloud-native (Temenos)         layer (Oracle docs)
+
+  Open API option                      Over 700 documented and            OBAPI exposes REST services;
+                                       supported Open APIs (Temenos);     Berlin Group v1.3.6 APIs are
+                                       API catalogue on the Temenos       supported for the retail persona
+                                       developer portal                   (Oracle docs)
+
+
+
+
+                                                                                                     Page 17 of 21
+Al Qarib GTB & Corporate Banking – Detailed Feature Catalogue
+
+
+
+
+                                       Temenos Transact (T24)                      Oracle FLEXCUBE (FCUBS)
+
+  Other connection                     IRIS REST interaction framework             FCUBS gateway web services
+  options                              over OFS messages; TWS SOAP                 and RESTful services (Oracle
+                                       services; event-driven                      docs); Integration Gateway with
+                                       Integration Framework for                   synchronous EJB and
+                                       outbound events (overview, IRIS)            asynchronous MDB deployment
+                                                                                   patterns (Oracle gateway guide)
+
+  Adapter approach                     Call published Open APIs first;             OBAPI has an adapter layer of
+                                       use IRIS or OFS only where no API           Java interfaces implemented per
+                                       exists                                      host, mapping requests and
+                                                                                   responses to the core (Oracle
+                                                                                   docs); the platform adapter
+                                                                                   follows the same pattern
+
+  Caution                              Endpoint coverage differs by                Berlin Group support covers
+                                       release, so confirm the bank's              retail only, so corporate payment,
+                                       version first (independent                  bulk and escrow calls need
+                                       analysis)                                   custom adapter work
+
+  Liquidity                            Confirm sweeping and pooling                Liquidity management exposes
+                                       support in the bank's release               sweep, structure and instruction
+                                                                                   services through the API gateway
+                                                                                   (Oracle docs)
+
+
+
+Core touchpoints by module
+
+  Modules                                          What the platform needs from         Mode
+                                                   the core
+
+  Accounts, statements,                            Account list, balance,               Synchronous, short cache
+  reports (4.1, 11.1)                              transaction history, customer
+                                                   master
+
+  Own and scheduled                                Internal posting, standing order     Synchronous with
+  transfers (1.5)                                                                       idempotency key
+
+  Instant, ACH, RTGS,                              Debit posting, then hand-off to      Synchronous debit,
+  SWIFT (1.1 to 1.4)                               the payment hub or CBL               asynchronous status
+                                                   gateway; status and returns
+
+  Bulk and payroll (2.1, 2.2)                      Account validation, batch            Asynchronous with
+                                                   posting, row-level result; instant   progress
+                                                   crediting for salary
+
+
+
+
+                                                                                                               Page 18 of 21
+Al Qarib GTB & Corporate Banking – Detailed Feature Catalogue
+
+
+
+
+  Modules                                          What the platform needs from        Mode
+                                                   the core
+
+  Branch deposits by code                          Teller transaction carrying the     Synchronous in the branch
+  (3.2)                                            Customer ID, credit to              flow
+                                                   corporate or virtual account
+
+  Virtual accounts (4.1, 4.2)                      Master account in the core;         Decision per core
+                                                   virtual ledger in the platform or
+                                                   sub-accounts in the core,
+                                                   chosen per core capability
+
+  Conditional payments                             Hold, release and return on a       Synchronous
+  (5.1, 5.2)                                       core account
+
+  Trade (6.1 to 6.3)                               Margin hold, accounting             Asynchronous
+                                                   entries, charges; trade
+                                                   processing in the core trade
+                                                   module or a separate trade
+                                                   system
+
+  Fees (all modules)                               Charge posting per agreement        Synchronous with the
+                                                   tariff                              transaction
+
+
+
+Delivery checklist per core
+   1. Confirm the core product, release and which APIs and message formats are licensed
+       and enabled.
+   2. Agree the canonical model and the error map with the bank's core team.
+   3. Build the adapter and run contract tests in a sandbox with test accounts.
+   4. Test the end-of-day, holiday and offline-core cases.
+   5. Run performance tests at salary-day volumes, including instant salary.
+   6. Go live with a daily reconciliation report and a fallback queue.
+
+Points to confirm with each bank: core product and release, available Open APIs,
+whether virtual accounts are native or kept in the platform, the interface to the CBL
+payment systems, and the data format for the instant salary connection to CBL.
+
+
+Market edges, Libya context and open points
+The 2026 market direction is clear: corporates want real-time payments, structured data,
+virtual accounts and embedded intelligence, and Libya's central bank is building the rails
+to support them.
+
+
+
+
+                                                                                                              Page 19 of 21
+Al Qarib GTB & Corporate Banking – Detailed Feature Catalogue
+
+
+
+
+Edges in 2026
+       Orchestration: transaction banking is moving from digital adoption to integration and
+       intelligence, with real-time rails, programmable liquidity and embedded AI (Standard
+       Chartered).
+       Virtual accounts and reconciliation: the fastest-growing cash-management tool, and
+       the main use of AI in treasury (Datos Insights, Deutsche Bank).
+       Satisfaction gap: 60% of banks prioritised B2B payment innovation in the past three
+       years, yet only 32% of large corporates are satisfied with their main bank
+       (Capgemini).
+       Request for payment and pay-by-bank: supports payment links and collections
+       without cards (Modern Treasury).
+
+
+Libya context
+       LYPay is the CBL instant-payment rail; ACH and RTGS are the domestic clearing and
+       settlement systems; SWIFT is in service.
+       CBL's 2026 national strategy for digital payments plans a national switch and wider
+       digital payments (CBL strategy).
+       At a meeting on 5 August 2026, CBL reported mobile-banking transactions of LYD 209
+       billion and RTGS transactions of LYD 143 billion (CBL); the period covered was not
+       stated in the page excerpt.
+       Circular 9/2026 of 11 March 2026 sets new e-wallet transfer limits and allows
+       registered foreign residents to use e-wallets (North Africa Post).
+
+
+Open points to confirm
+   1. ACH amount cap per item: CBL describes ACH for amounts under 10,000 LYD in the
+       draft; confirm the cap and the return window.
+   2. LYPay corporate ceilings: published ceilings are for individuals; agree corporate and
+       bulk ceilings with CBL.
+   3. Escrow product scope: confirm which of Option A and Option B the bank will
+       support.
+   4. "Other banks" in collections: confirm the Libyan meaning and the branch network
+       that can accept deposits by customer code.
+   5. Branch teller flow: the teller-side screen for deposits by code is a new design.
+   6. Row caps: set the default per segment, since wallet stories use 100 rows and the
+       wallet journey shows 200.
+   7. Documentary collections: documents and process from the bank's trade team are
+       still to be received.
+
+
+
+                                                                                         Page 20 of 21
+Al Qarib GTB & Corporate Banking – Detailed Feature Catalogue
+
+
+
+
+   8. All limits: every limit value in this catalogue is a parameter; no figure is final.
+
+
+Sources
+Search results read on 23 November 2026; the CBL draft Digital Documentary Credit v1.1,
+the Cash Monitoring deck and the Bulk Transfer Journey were supplied by the user.
+
+       Datos Insights, Deutsche Bank Flow, Standard Chartered, Bottomline, Modern
+       Treasury, Capgemini, Accenture
+       CBL news, 5 August 2026, CBL national strategy 2026, North Africa Post
+
+
+
+
+                                                                                            Page 21 of 21
+
