@@ -26,6 +26,8 @@ export type ApprovalTargetHandler = {
   onRejected: (tx: Tx, request: ApprovalRequest, ctx: AuthContext, deps: Deps, reason: string) => Promise<void>;
   /** Extra target-specific eligibility (called for every vote, inside the transaction). */
   checkVoter?: (tx: Tx, request: ApprovalRequest, ctx: AuthContext, deps: Deps) => Promise<void>;
+  /** The approval period ended without a decision. Runs in the transaction that closes it. */
+  onExpired?: (tx: Tx, request: ApprovalRequest, deps: Deps) => Promise<void>;
 };
 
 const handlers = new Map<string, ApprovalTargetHandler>();
@@ -99,6 +101,52 @@ export async function closeApprovalRequest(
     data: { state, activeKey: null, decidedAt: new Date(), version: { increment: 1 } },
   });
   return updated.count === 1;
+}
+
+/**
+ * Close proposals whose approval period ended (worker maintenance). Each one is closed in its
+ * own transaction together with its target's state change, so a proposal is never left
+ * "expired" while its payment still looks pending. Idempotent: a second run finds nothing.
+ */
+export async function expireDueApprovals(deps: Deps, limit = 50): Promise<number> {
+  const now = deps.clock.now();
+  const due = await deps.db.approvalRequest.findMany({
+    where: { state: "PENDING", expiresAt: { lte: now } },
+    select: { id: true },
+    orderBy: { expiresAt: "asc" },
+    take: limit,
+  });
+  let expired = 0;
+  for (const { id } of due) {
+    const closed = await inTx(
+      deps.db,
+      async (tx) => {
+        await tx.$queryRaw`SELECT "id" FROM "ApprovalRequest" WHERE "id" = ${id}::uuid FOR UPDATE`;
+        const request = await tx.approvalRequest.findUnique({ where: { id } });
+        if (!request || request.state !== "PENDING" || !request.expiresAt || request.expiresAt.getTime() > now.getTime()) return false;
+        if (!(await closeApprovalRequest(tx, id, "EXPIRED"))) return false;
+        await handlers.get(request.targetType)?.onExpired?.(tx, request, deps);
+        await tx.auditEvent.create({
+          data: {
+            bankId: request.bankId,
+            corporateId: request.corporateId,
+            actorKind: "SERVICE",
+            actorService: "maintenance",
+            action: "approval.expired",
+            targetType: request.targetType,
+            targetId: request.targetId,
+            correlationId: `maintenance_${id}`,
+            proposalRevision: request.targetRevision,
+            result: "SUCCESS",
+          },
+        });
+        return true;
+      },
+      { skipIdempotency: true },
+    );
+    if (closed) expired += 1;
+  }
+  return expired;
 }
 
 /** Tenant scope: a request outside the caller's bank/corporate does not exist for them. */

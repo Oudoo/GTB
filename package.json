@@ -30,7 +30,7 @@
     "db:generate": "prisma generate",
     "db:migrate": "tsx --env-file-if-exists=.env scripts/db-migrate.ts",
     "db:seed": "tsx --conditions=react-server --env-file-if-exists=.env prisma/seed.ts",
-    "db:reset-demo": "tsx --env-file-if-exists=.env scripts/db-reset-demo.ts",
+    "db:reset-demo": "tsx --conditions=react-server --env-file-if-exists=.env scripts/db-reset-demo.ts",
     "db:local": "bash scripts/dev-postgres.sh",
     "setup:env": "node scripts/setup-env.mjs",
     "openapi:generate": "tsx scripts/openapi-generate.ts",

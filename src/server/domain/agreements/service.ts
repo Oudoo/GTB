@@ -21,6 +21,7 @@ import type { Deps } from "@/server/deps";
 import { canonicalJson, digestOf } from "@/server/hash";
 import { createApprovalRequest, registerApprovalTarget } from "@/server/domain/approvals/service";
 import { loadAgreementStatus, type AgreementState } from "./policy";
+import { segmentTemplate } from "./templates";
 
 const MAX_BACKDATE_MS = 24 * 3_600_000;
 
@@ -337,6 +338,57 @@ async function activateVersion(tx: Tx, versionId: string, ctx: AuthContext, deps
   });
 }
 
+/**
+ * Worker maintenance: an approved future revision becomes EFFECTIVE when its start passes and
+ * the revision it replaces (already truncated to that instant at approval) becomes SUPERSEDED.
+ * Enforcement never depends on this label — `loadAgreementStatus` decides by time — so a late
+ * sweep only delays the wording, never the control.
+ */
+export async function promoteDueAgreementVersions(deps: Deps, limit = 50): Promise<number> {
+  const now = deps.clock.now();
+  const due = await deps.db.agreementVersion.findMany({
+    where: { status: "APPROVED", effectiveFrom: { lte: now }, effectiveUntil: { gt: now } },
+    select: { id: true, agreementId: true },
+    orderBy: { effectiveFrom: "asc" },
+    take: limit,
+  });
+  let promoted = 0;
+  for (const row of due) {
+    const done = await inTx(
+      deps.db,
+      async (tx) => {
+        await tx.$queryRaw`SELECT "id" FROM "Agreement" WHERE "id" = ${row.agreementId}::uuid FOR UPDATE`;
+        const version = await tx.agreementVersion.findUnique({ where: { id: row.id } });
+        if (!version || version.status !== "APPROVED" || version.effectiveFrom.getTime() > now.getTime()) return false;
+        await tx.agreementVersion.updateMany({
+          where: { agreementId: version.agreementId, status: "EFFECTIVE", effectiveUntil: { lte: version.effectiveFrom } },
+          data: { status: "SUPERSEDED", version: { increment: 1 } },
+        });
+        await tx.agreementVersion.update({ where: { id: version.id }, data: { status: "EFFECTIVE", version: { increment: 1 } } });
+        await tx.auditEvent.create({
+          data: {
+            bankId: version.bankId,
+            corporateId: version.corporateId,
+            actorKind: "SERVICE",
+            actorService: "maintenance",
+            action: "agreement.version.effective",
+            targetType: "agreementVersion",
+            targetId: version.id,
+            correlationId: `maintenance_${version.id}`,
+            proposalRevision: version.versionNo,
+            changes: { before: "APPROVED", after: "EFFECTIVE" },
+            result: "SUCCESS",
+          },
+        });
+        return true;
+      },
+      { skipIdempotency: true },
+    );
+    if (done) promoted += 1;
+  }
+  return promoted;
+}
+
 registerApprovalTarget("agreementVersion", {
   onApproved: async (tx, request, ctx, deps) => activateVersion(tx, request.targetId, ctx, deps),
   onRejected: async (tx, request, ctx, _deps, reason) => {
@@ -492,6 +544,8 @@ export type AgreementOverview = {
   effectiveVersionId: string | null;
   versions: AgreementVersionView[];
   accounts: Array<{ id: string; name: string; nameAr: string; maskedNumber: string; kind: string; currency: string; status: string }>;
+  /** A restore proposal awaiting an independent decision. Bank view only. */
+  pendingRestore: { id: string; reason: string; proposedBy: string; approvalRequestId: string | null } | null;
 };
 
 async function buildOverview(deps: Deps, corporateId: string): Promise<AgreementOverview> {
@@ -509,7 +563,14 @@ async function buildOverview(deps: Deps, corporateId: string): Promise<Agreement
   const people = await deps.db.person.findMany({ where: { id: { in: [...personIds] } }, select: { id: true, name: true } });
   const names = new Map(people.map((person) => [person.id, person.name]));
   const accounts = await deps.db.account.findMany({ where: { corporateId }, orderBy: { createdAt: "asc" } });
+  const restore = agreement
+    ? await deps.db.agreementRestoreProposal.findFirst({ where: { agreementId: agreement.id, status: "PENDING_APPROVAL" }, orderBy: { createdAt: "desc" } })
+    : null;
+  const restoreMaker = restore ? await deps.db.person.findUnique({ where: { id: restore.proposedByPersonId }, select: { name: true } }) : null;
   return {
+    pendingRestore: restore
+      ? { id: restore.id, reason: restore.reason, proposedBy: restoreMaker?.name ?? "", approvalRequestId: restore.approvalRequestId }
+      : null,
     corporate: {
       id: corporate.id,
       legalName: corporate.legalName,
@@ -574,8 +635,33 @@ export async function getCorporateAgreement(deps: Deps, ctx: AuthContext): Promi
   // The corporate sees decided history only, not the bank's pending or rejected drafts.
   return {
     ...overview,
+    pendingRestore: null,
     versions: overview.versions.filter((version) => ["APPROVED", "EFFECTIVE", "SUPERSEDED"].includes(version.status)),
   };
+}
+
+/**
+ * Starting point for a proposal: the synthetic segment template with this corporate's own
+ * accounts. It is test policy, not a bank-approved or CBL default (AGR-02).
+ */
+export async function getAgreementTemplate(
+  deps: Deps,
+  ctx: AuthContext,
+  corporateId: string,
+  segment?: AgreementTerms["segment"],
+): Promise<AgreementTerms> {
+  const bankCtx = requireBank(ctx);
+  requirePermission(bankCtx, "bank.agreement.propose");
+  const corporate = await corporateInBank(deps, bankCtx, corporateId);
+  const accounts = await deps.db.account.findMany({ where: { corporateId: corporate.id, status: "ACTIVE" }, orderBy: { createdAt: "asc" } });
+  const ids = (kinds: string[]) => accounts.filter((account) => kinds.includes(account.kind)).map((account) => account.id);
+  const payroll = ids(["PAYROLL"]);
+  return segmentTemplate(segment ?? corporate.segment, {
+    all: accounts.map((account) => account.id),
+    payments: ids(["OPERATING", "SAVINGS"]),
+    payroll: payroll.length > 0 ? payroll : ids(["OPERATING"]),
+    collections: ids(["OPERATING", "COLLECTION"]),
+  });
 }
 
 export type BankCorporateRow = {

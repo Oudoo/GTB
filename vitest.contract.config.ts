@@ -1,5 +1,5 @@
 import { defineConfig } from "vitest/config";
-import { sharedResolve } from "./vitest.shared";
+import { sharedResolve } from "./vitest.shared.ts";
 
 // Adapter contract tests (CoreBankingPort / PaymentRailPort against the simulated
 // implementations on real PostgreSQL) and API/OpenAPI parity tests.

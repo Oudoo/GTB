@@ -1,5 +1,5 @@
 import { defineConfig } from "vitest/config";
-import { sharedResolve } from "./vitest.shared";
+import { sharedResolve } from "./vitest.shared.ts";
 
 // Pure unit and property tests: no database, no network.
 export default defineConfig({

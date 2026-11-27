@@ -1,0 +1,152 @@
+{
+  "title": "Audit trail",
+  "description": "An append-only record of who did what and when. Nothing here can be edited or deleted.",
+  "bankDescription": "Append-only record for your bank and its corporates. Nothing here can be edited or deleted.",
+  "search": "Reference, record ID or support reference",
+  "searchHint": "For example a payment reference or the execution reference from a statement line.",
+  "actionFilter": "Action",
+  "anyAction": "Any action",
+  "resultFilter": "Result",
+  "anyResult": "Any result",
+  "fromDate": "From date",
+  "toDate": "To date",
+  "apply": "Search",
+  "reset": "Clear filters",
+  "empty": "No audit events match these filters.",
+  "when": "When",
+  "who": "Who",
+  "what": "Action",
+  "target": "Record",
+  "changes": "Details",
+  "result": "Result",
+  "older": "Older events",
+  "sensitive": "Sensitive read",
+  "revision": "Revision {revision}",
+  "actor": {
+    "PERSON": "Person",
+    "CREDENTIAL": "API credential",
+    "SERVICE": "System",
+    "BANK": "Bank staff"
+  },
+  "service": {
+    "worker": "Processing service",
+    "maintenance": "Scheduled maintenance",
+    "approval": "Approval engine",
+    "seed": "Demo data setup"
+  },
+  "results": {
+    "SUCCESS": "Done",
+    "DENIED": "Denied",
+    "FAILED": "Failed"
+  },
+  "groups": {
+    "payment": "Payments",
+    "approval": "Approvals",
+    "beneficiary": "Beneficiaries",
+    "agreement": "Agreement",
+    "rail": "Rail parameters",
+    "session": "Sessions"
+  },
+  "actions": {
+    "payment": {
+      "created": "Payment draft created",
+      "draft": {
+        "updated": "Payment draft edited"
+      },
+      "submitted": "Payment submitted for approval",
+      "cancelled": "Payment cancelled",
+      "revised": "Payment revised — earlier approvals void",
+      "release": {
+        "retry": "Release requested again"
+      },
+      "execution": {
+        "processing": "Execution started — funds reserved",
+        "submitted": "Accepted by the payment rail",
+        "settled": "Settled — booked in the banking system",
+        "failed": "Failed before posting — nothing debited",
+        "status_unknown": "No confirmation — result being checked",
+        "returned": "Returned — compensating entry booked"
+      }
+    },
+    "approval": {
+      "vote": "Approval attempt",
+      "approved": "Proposal approved",
+      "rejected": "Proposal rejected",
+      "expired": "Approval period ended"
+    },
+    "beneficiary": {
+      "created": "Beneficiary added",
+      "updated": "Beneficiary changed",
+      "archived": "Beneficiary archived"
+    },
+    "agreement": {
+      "version": {
+        "proposed": "Agreement revision proposed",
+        "activated": "Agreement revision approved",
+        "effective": "Agreement revision took effect",
+        "rejected": "Agreement revision rejected"
+      },
+      "suspended": "Agreement suspended (emergency stop)",
+      "restored": "Agreement restored",
+      "restore": {
+        "proposed": "Agreement restore proposed",
+        "rejected": "Agreement restore rejected"
+      }
+    },
+    "rail": {
+      "parameter": {
+        "proposed": "Rail parameter change proposed",
+        "approved": "Rail parameter change approved",
+        "rejected": "Rail parameter change rejected"
+      }
+    },
+    "session": {
+      "context": {
+        "selected": "Workspace selected"
+      }
+    }
+  },
+  "targets": {
+    "payment": "Payment",
+    "beneficiary": "Beneficiary",
+    "agreement": "Agreement",
+    "agreementVersion": "Agreement revision",
+    "agreementRestore": "Agreement restore",
+    "railParameter": "Rail parameter",
+    "membership": "Workspace",
+    "corporate": "Corporate"
+  },
+  "fields": {
+    "before": "Before",
+    "after": "After",
+    "reference": "Reference",
+    "paymentReference": "Payment",
+    "failureCode": "Failure",
+    "decision": "Decision",
+    "versionNo": "Revision",
+    "termsHash": "Terms digest",
+    "effectiveFrom": "Effective from",
+    "effectiveUntil": "Effective until",
+    "status": "Status",
+    "rail": "Rail",
+    "perItemMinor": "Ceiling (minor units)",
+    "provenance": "Provenance",
+    "cutoffLocalTime": "Cut-off",
+    "approvalRequestId": "Approval request",
+    "klass": "Proposal type",
+    "approvalsCount": "Approvals counted",
+    "requiredApprovals": "Approvals required",
+    "state": "State",
+    "payloadHash": "Proposal digest",
+    "proposalHash": "Proposal digest",
+    "amountMinor": "Amount",
+    "feeMinor": "Fee",
+    "currency": "Currency",
+    "transactionType": "Transaction type",
+    "requiredCheckers": "Checkers required",
+    "agreementVersionNo": "Agreement revision",
+    "matchStatus": "Name check",
+    "maskedReference": "Account",
+    "closeMatchAcknowledged": "Close match acknowledged"
+  }
+}

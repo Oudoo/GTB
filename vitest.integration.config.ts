@@ -1,5 +1,5 @@
 import { defineConfig } from "vitest/config";
-import { sharedResolve } from "./vitest.shared";
+import { sharedResolve } from "./vitest.shared.ts";
 
 // Integration tests run against REAL PostgreSQL. The global setup provisions a migrated,
 // seeded template database and fails the whole run if PostgreSQL is unavailable — these tests

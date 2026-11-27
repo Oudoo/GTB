@@ -255,10 +255,23 @@ describe("S4 gate — complete payment with distinct people", () => {
       "SUBMITTED",
       "SETTLED",
     ]);
-    const audit = await world.db.auditEvent.findMany({ where: { targetType: "payment", targetId: paymentId }, orderBy: { at: "asc" } });
-    expect(audit.map((event) => event.action)).toEqual(["payment.created", "payment.submitted", "approval.vote", "approval.approved"]);
-    const people = new Set(audit.filter((event) => event.result === "SUCCESS").map((event) => event.actorPersonId));
+    const audit = await world.db.auditEvent.findMany({ where: { targetType: "payment", targetId: paymentId }, orderBy: [{ at: "asc" }, { id: "asc" }] });
+    expect(audit.map((event) => event.action)).toEqual([
+      "payment.created",
+      "payment.submitted",
+      "approval.vote",
+      "approval.approved",
+      "payment.execution.processing",
+      "payment.execution.submitted",
+      "payment.execution.settled",
+    ]);
+    const people = new Set(audit.filter((event) => event.result === "SUCCESS" && event.actorPersonId !== null).map((event) => event.actorPersonId));
     expect(people.size).toBe(2); // maker and checker are different humans
+    // The worker's audit rows carry the same stable execution reference as the statement line.
+    const execution = audit.filter((event) => event.action.startsWith("payment.execution."));
+    expect(execution.every((event) => event.actorKind === "SERVICE" && event.actorService === "worker")).toBe(true);
+    const settledAudit = execution.find((event) => event.action === "payment.execution.settled");
+    expect((settledAudit?.changes as { reference?: string } | null)?.reference).toBe(reference);
 
     // Running the worker again changes nothing.
     await world.drain();

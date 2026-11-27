@@ -32,6 +32,7 @@ export const DELETABLE_TABLES = [
   '"IdempotencyRecord"',
   '"ApiQuotaWindow"',
   '"LocalInboxMessage"',
+  '"WorkerHeartbeat"',
   '"simcore"."SimFault"',
   '"simcore"."SimReconOverlay"',
 ] as const;

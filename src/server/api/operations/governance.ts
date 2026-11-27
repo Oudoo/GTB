@@ -1,10 +1,9 @@
 import { z } from "zod";
 import { agreementProposalSchema, segmentSchema } from "@/contracts/agreement";
 import { idParamSchema, reasonSchema } from "@/contracts/common";
-import { notFound } from "@/contracts/errors";
-import { requireBank, requirePermission } from "@/server/auth/context";
 import { listRailParameters, proposeRailParameter, railParameterProposalSchema } from "@/server/domain/agreements/rails";
 import {
+  getAgreementTemplate,
   getAgreementVersionReview,
   getBankAgreementOverview,
   getCorporateAgreement,
@@ -13,7 +12,6 @@ import {
   proposeRestore,
   suspendAgreement,
 } from "@/server/domain/agreements/service";
-import { segmentTemplate } from "@/server/domain/agreements/templates";
 import { getLimitsUsage } from "@/server/domain/agreements/usage";
 import { command, query, type AnyOperation } from "../framework";
 
@@ -80,23 +78,7 @@ export const bankGovernanceOperations: AnyOperation[] = [
     permission: "bank.agreement.propose",
     params: idParamSchema,
     query: templateQuery,
-    handler: async ({ deps, ctx, params, query: q }) => {
-      const bankCtx = requireBank(ctx);
-      requirePermission(bankCtx, "bank.agreement.propose");
-      const corporate = await deps.db.corporate.findFirst({ where: { id: params.id, bankId: bankCtx.bankId } });
-      if (!corporate) throw notFound();
-      const accounts = await deps.db.account.findMany({ where: { corporateId: corporate.id, status: "ACTIVE" }, orderBy: { createdAt: "asc" } });
-      const ids = (kinds: string[]) => accounts.filter((account) => kinds.includes(account.kind)).map((account) => account.id);
-      const payroll = ids(["PAYROLL"]);
-      return {
-        data: segmentTemplate(q.segment ?? corporate.segment, {
-          all: accounts.map((account) => account.id),
-          payments: ids(["OPERATING", "SAVINGS"]),
-          payroll: payroll.length > 0 ? payroll : ids(["OPERATING"]),
-          collections: ids(["OPERATING", "COLLECTION"]),
-        }),
-      };
-    },
+    handler: async ({ deps, ctx, params, query: q }) => ({ data: await getAgreementTemplate(deps, ctx, params.id, q.segment) }),
   }),
   command<IdParams, Record<string, never>, z.infer<typeof agreementProposalSchema>>({
     id: "proposeAgreementRevision",

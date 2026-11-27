@@ -1,5 +1,7 @@
 import { OperationRegistry, type AnyOperation } from "./framework";
 import { approvalOperations } from "./operations/approvals";
+import { auditOperations } from "./operations/audit";
+import { dashboardOperations } from "./operations/dashboard";
 import { agreementOperations, bankGovernanceOperations } from "./operations/governance";
 import { healthOperations } from "./operations/health";
 import { accountOperations, beneficiaryOperations, paymentOperations } from "./operations/payments";
@@ -9,12 +11,14 @@ import { sessionOperations } from "./operations/session";
 export const ALL_OPERATIONS: readonly AnyOperation[] = [
   ...healthOperations,
   ...sessionOperations,
+  ...dashboardOperations,
   ...accountOperations,
   ...beneficiaryOperations,
   ...paymentOperations,
   ...approvalOperations,
   ...agreementOperations,
   ...bankGovernanceOperations,
+  ...auditOperations,
 ];
 
 let registry: OperationRegistry | undefined;

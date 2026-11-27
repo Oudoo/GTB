@@ -1,0 +1,152 @@
+{
+  "title": "سجل التدقيق",
+  "description": "سجل غير قابل للتعديل لمن فعل ماذا ومتى. لا يمكن تعديل أو حذف أي شيء هنا.",
+  "bankDescription": "سجل غير قابل للتعديل لمصرفك وشركاته. لا يمكن تعديل أو حذف أي شيء هنا.",
+  "search": "المرجع أو رقم السجل أو مرجع الدعم",
+  "searchHint": "مثل مرجع الدفعة أو مرجع التنفيذ الظاهر في سطر كشف الحساب.",
+  "actionFilter": "الإجراء",
+  "anyAction": "كل الإجراءات",
+  "resultFilter": "النتيجة",
+  "anyResult": "كل النتائج",
+  "fromDate": "من تاريخ",
+  "toDate": "إلى تاريخ",
+  "apply": "بحث",
+  "reset": "مسح عوامل التصفية",
+  "empty": "لا توجد أحداث تدقيق مطابقة لعوامل التصفية.",
+  "when": "الوقت",
+  "who": "المنفّذ",
+  "what": "الإجراء",
+  "target": "السجل",
+  "changes": "التفاصيل",
+  "result": "النتيجة",
+  "older": "أحداث أقدم",
+  "sensitive": "اطلاع على بيانات حساسة",
+  "revision": "النسخة {revision}",
+  "actor": {
+    "PERSON": "مستخدم",
+    "CREDENTIAL": "مفتاح واجهة برمجية",
+    "SERVICE": "النظام",
+    "BANK": "موظف المصرف"
+  },
+  "service": {
+    "worker": "خدمة المعالجة",
+    "maintenance": "الصيانة المجدولة",
+    "approval": "محرك الاعتماد",
+    "seed": "إعداد البيانات التجريبية"
+  },
+  "results": {
+    "SUCCESS": "تم",
+    "DENIED": "مرفوض",
+    "FAILED": "فشل"
+  },
+  "groups": {
+    "payment": "المدفوعات",
+    "approval": "الاعتمادات",
+    "beneficiary": "المستفيدون",
+    "agreement": "الاتفاقية",
+    "rail": "معايير القنوات",
+    "session": "الجلسات"
+  },
+  "actions": {
+    "payment": {
+      "created": "إنشاء مسودة دفعة",
+      "draft": {
+        "updated": "تعديل مسودة دفعة"
+      },
+      "submitted": "إرسال دفعة للاعتماد",
+      "cancelled": "إلغاء دفعة",
+      "revised": "تعديل دفعة — أُلغيت الاعتمادات السابقة",
+      "release": {
+        "retry": "طلب تنفيذ الدفعة مجددًا"
+      },
+      "execution": {
+        "processing": "بدء التنفيذ — حُجز المبلغ",
+        "submitted": "قبلتها قناة الدفع",
+        "settled": "تمت التسوية — قُيّدت في النظام المصرفي",
+        "failed": "فشلت قبل القيد — لم يُخصم شيء",
+        "status_unknown": "لا يوجد تأكيد — جارٍ التحقق من النتيجة",
+        "returned": "أُعيدت — سُجّل قيد عكسي"
+      }
+    },
+    "approval": {
+      "vote": "محاولة اعتماد",
+      "approved": "اعتماد المقترح",
+      "rejected": "رفض المقترح",
+      "expired": "انتهاء مهلة الاعتماد"
+    },
+    "beneficiary": {
+      "created": "إضافة مستفيد",
+      "updated": "تعديل مستفيد",
+      "archived": "أرشفة مستفيد"
+    },
+    "agreement": {
+      "version": {
+        "proposed": "اقتراح نسخة من الاتفاقية",
+        "activated": "اعتماد نسخة من الاتفاقية",
+        "effective": "بدء سريان نسخة من الاتفاقية",
+        "rejected": "رفض نسخة من الاتفاقية"
+      },
+      "suspended": "إيقاف الاتفاقية (إيقاف طارئ)",
+      "restored": "استعادة الاتفاقية",
+      "restore": {
+        "proposed": "اقتراح استعادة الاتفاقية",
+        "rejected": "رفض استعادة الاتفاقية"
+      }
+    },
+    "rail": {
+      "parameter": {
+        "proposed": "اقتراح تغيير معايير قناة",
+        "approved": "اعتماد تغيير معايير قناة",
+        "rejected": "رفض تغيير معايير قناة"
+      }
+    },
+    "session": {
+      "context": {
+        "selected": "اختيار مساحة العمل"
+      }
+    }
+  },
+  "targets": {
+    "payment": "دفعة",
+    "beneficiary": "مستفيد",
+    "agreement": "اتفاقية",
+    "agreementVersion": "نسخة اتفاقية",
+    "agreementRestore": "استعادة اتفاقية",
+    "railParameter": "معايير قناة",
+    "membership": "مساحة عمل",
+    "corporate": "شركة"
+  },
+  "fields": {
+    "before": "قبل",
+    "after": "بعد",
+    "reference": "المرجع",
+    "paymentReference": "الدفعة",
+    "failureCode": "سبب الفشل",
+    "decision": "القرار",
+    "versionNo": "النسخة",
+    "termsHash": "بصمة الشروط",
+    "effectiveFrom": "تسري من",
+    "effectiveUntil": "تسري حتى",
+    "status": "الحالة",
+    "rail": "القناة",
+    "perItemMinor": "السقف (بالوحدات الصغرى)",
+    "provenance": "مصدر القيمة",
+    "cutoffLocalTime": "وقت الإقفال",
+    "approvalRequestId": "طلب الاعتماد",
+    "klass": "نوع المقترح",
+    "approvalsCount": "الاعتمادات المحتسبة",
+    "requiredApprovals": "الاعتمادات المطلوبة",
+    "state": "الحالة",
+    "payloadHash": "بصمة المقترح",
+    "proposalHash": "بصمة المقترح",
+    "amountMinor": "المبلغ",
+    "feeMinor": "الرسم",
+    "currency": "العملة",
+    "transactionType": "نوع المعاملة",
+    "requiredCheckers": "عدد المدققين المطلوب",
+    "agreementVersionNo": "نسخة الاتفاقية",
+    "matchStatus": "التحقق من الاسم",
+    "maskedReference": "الحساب",
+    "closeMatchAcknowledged": "إقرار التطابق التقريبي"
+  }
+}

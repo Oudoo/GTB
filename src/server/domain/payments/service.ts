@@ -8,7 +8,7 @@
 import { maskAccountReference } from "@/contracts/common";
 import { DomainError, conflict, denied, notFound, type ErrorCode } from "@/contracts/errors";
 import { POSTING_CURRENCIES, assertCurrency, minorToJson, parseMinorString } from "@/contracts/money";
-import { PAYMENT_TYPE_RAIL, paymentInputSchema, type PaymentInput, type SinglePaymentType } from "@/contracts/payments";
+import { PAYMENT_TYPE_MODULE, PAYMENT_TYPE_RAIL, paymentInputSchema, type PaymentInput, type SinglePaymentType } from "@/contracts/payments";
 import { CoreUnavailableError } from "@/server/adapters/core/port";
 import { addTimeline, timelineActor, writeAudit } from "@/server/audit/audit";
 import {
@@ -24,6 +24,7 @@ import { permissionsForRoles } from "@/server/auth/permissions";
 import { businessDateOf, dbDateToLocalDate, localDateToDbDate } from "@/server/calendar";
 import { Prisma, inTx, type Db, type DbOrTx, type Tx } from "@/server/db/client";
 import type { Deps } from "@/server/deps";
+import { loadAgreementStatus } from "@/server/domain/agreements/policy";
 import { closeApprovalRequest, createApprovalRequest, getApproval, registerApprovalTarget, type ApprovalView } from "@/server/domain/approvals/service";
 import { registerInstructionObserver, startAttempt } from "@/server/domain/execution/engine";
 import { digestOf } from "@/server/hash";
@@ -576,7 +577,7 @@ export async function submitPayment(
       corporateId: payment.corporateId,
       aggregateType: "payment",
       aggregateId: paymentId,
-      code: "PAYMENT_SUBMITTED",
+      code: "PAYMENT_SENT_FOR_APPROVAL",
       fromState: "DRAFT",
       toState: "PENDING_APPROVAL",
       ...timelineActor(corporateCtx),
@@ -755,6 +756,25 @@ registerApprovalTarget("payment", {
       detail: { reason },
     });
     await statusEvent(tx, { ...payment, state: "REJECTED" }, ctx.correlationId);
+  },
+  onExpired: async (tx, request, deps) => {
+    const payment = await lockPayment(tx, request.targetId);
+    // Only the revision this request covered can expire with it.
+    if (!payment || payment.state !== "PENDING_APPROVAL" || payment.approvalRequestId !== request.id) return;
+    await tx.payment.update({ where: { id: payment.id }, data: { state: "EXPIRED", version: { increment: 1 } } });
+    await addTimeline(tx, {
+      at: deps.clock.now(),
+      bankId: payment.bankId,
+      corporateId: payment.corporateId,
+      aggregateType: "payment",
+      aggregateId: payment.id,
+      code: "PAYMENT_EXPIRED",
+      fromState: "PENDING_APPROVAL",
+      toState: "EXPIRED",
+      actorService: "maintenance",
+      reference: payment.reference,
+    });
+    await statusEvent(tx, { ...payment, state: "EXPIRED" }, `maintenance_${request.id}`);
   },
 });
 
@@ -1017,6 +1037,29 @@ registerInstructionObserver("SINGLE_PAYMENT", async (tx, instruction, change) =>
     reference: change.reference,
     ...(change.failureCode ? { detail: { failureCode: change.failureCode } } : {}),
     at: change.at,
+  });
+  // The audit trail names the same stable execution reference that the statement line and the
+  // timeline carry, so one instruction can be followed across all three (SEC-05).
+  await tx.auditEvent.create({
+    data: {
+      bankId: payment.bankId,
+      corporateId: payment.corporateId,
+      actorKind: "SERVICE",
+      actorService: "worker",
+      action: `payment.execution.${next.toLowerCase()}`,
+      targetType: "payment",
+      targetId: payment.id,
+      correlationId: instruction.correlationId,
+      proposalRevision: payment.revision,
+      changes: {
+        before: payment.state,
+        after: next,
+        paymentReference: payment.reference,
+        ...(change.reference ? { reference: change.reference } : {}),
+        ...(change.failureCode ? { failureCode: change.failureCode } : {}),
+      },
+      result: next === "FAILED" ? "FAILED" : "SUCCESS",
+    },
   });
   await statusEvent(tx, { ...payment, state: next }, instruction.correlationId);
 });
@@ -1362,4 +1405,35 @@ export async function getPayment(deps: Deps, ctx: AuthContext, paymentId: string
       detail: event.detail,
     })),
   };
+}
+
+// ---------------------------------------------------------------------------------------------
+// Options for the payment wizard
+// ---------------------------------------------------------------------------------------------
+
+export type PaymentOptions = {
+  agreementState: string;
+  /** Transaction types the effective agreement enables for each debit-capable account. */
+  enabledTypes: Record<string, SinglePaymentType[]>;
+  today: string;
+};
+
+export async function getPaymentOptions(deps: Deps, ctx: AuthContext): Promise<PaymentOptions> {
+  const corporateCtx = requireCorporate(ctx);
+  requirePermission(corporateCtx, "payments.create");
+  const now = deps.clock.now();
+  const status = await loadAgreementStatus(deps.db, corporateCtx.corporateId, now);
+  const enabledTypes: Record<string, SinglePaymentType[]> = {};
+  if (status.policy) {
+    for (const [accountId, rights] of corporateCtx.grants) {
+      if (!rights.debit) continue;
+      const types: SinglePaymentType[] = [];
+      for (const type of ["INSTANT_ACCOUNT_CREDIT", "ACH_CREDIT", "OWN_ACCOUNT_TRANSFER"] as const) {
+        const entitlement = status.policy.modules.get(PAYMENT_TYPE_MODULE[type]);
+        if (entitlement?.allowedTypes.has(type) && entitlement.debitAccountIds.has(accountId)) types.push(type);
+      }
+      enabledTypes[accountId] = types;
+    }
+  }
+  return { agreementState: status.state, enabledTypes, today: businessDateOf(now, deps.timeZone) };
 }
