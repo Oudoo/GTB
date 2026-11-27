@@ -1,1 +1,83 @@
-{}
+{
+  "title": "Developer",
+  "description": "Sandbox API tokens and webhooks for your own systems. Everything here talks to simulated bank systems with synthetic data.",
+  "readOnly": "You can view this page. Creating or revoking needs an administrator who also holds the API role.",
+  "openapi": "API reference (OpenAPI 3.1)",
+  "openapiHelp": "Generated from the operations the server enforces.",
+  "credentials": {
+    "title": "API tokens",
+    "help": "A token carries only the scopes and accounts you choose. It can prepare payments but never approve them, and it cannot reach payroll details, administration or bank operations.",
+    "caption": "API tokens",
+    "name": "Name",
+    "prefix": "Token prefix",
+    "scopes": "Scopes",
+    "accounts": "Accounts",
+    "state": "Status",
+    "states": {
+      "ACTIVE": "Active",
+      "REVOKED": "Revoked",
+      "EXPIRED": "Expired"
+    },
+    "expires": "Expires",
+    "lastUsed": "Last used",
+    "never": "Never",
+    "empty": "No API tokens yet",
+    "createTitle": "Create a token",
+    "expiresIn": "Valid for (days)",
+    "create": "Create token",
+    "revoke": "Revoke",
+    "chooseScope": "Choose at least one scope.",
+    "tokenTitle": "Copy this token now",
+    "tokenHelp": "It is shown only once and is not stored. If you lose it, revoke it and create a new one.",
+    "scope": {
+      "accounts:read": "Read accounts, balances and limits",
+      "payments:read": "Read payments and beneficiaries",
+      "payments:write": "Prepare and submit payments (a person still approves)",
+      "batches:read": "Read bulk transfer batches",
+      "collections:read": "Read customers and deposits",
+      "agreements:read": "Read the agreement and limits",
+      "webhooks:manage": "Read webhook configuration and delivery log"
+    }
+  },
+  "webhooks": {
+    "title": "Webhooks",
+    "help": "We send a signed HTTPS request to your address when something finishes. Only public HTTPS addresses on the standard port are accepted. A failed delivery is retried after 10 s, 30 s, 2 min, 10 min and 1 h; it never changes the outcome of a payment.",
+    "caption": "Webhooks",
+    "url": "Destination address",
+    "events": "Events",
+    "state": "Status",
+    "active": "Active",
+    "disabled": "Disabled",
+    "deliveries": "Deliveries",
+    "deliveryCounts": "{delivered} delivered · {pending} waiting · {dead} gave up",
+    "empty": "No webhooks yet",
+    "createTitle": "Add a webhook",
+    "urlHint": "For example https://erp.example.com/alqarib-events",
+    "create": "Add webhook",
+    "disable": "Disable",
+    "chooseEvent": "Choose at least one event.",
+    "secretTitle": "Copy this signing secret now",
+    "secretHelp": "It is shown only once. Use it to check the X-AlQarib-Signature header of every delivery.",
+    "event": {
+      "payment": {
+        "status_changed": "A payment changed status"
+      },
+      "batch": {
+        "finished": "A bulk or payroll batch finished"
+      },
+      "deposit": {
+        "posted": "A branch deposit was credited"
+      },
+      "limit": {
+        "threshold_reached": "Limit usage reached an alert level"
+      }
+    },
+    "log": "Recent deliveries",
+    "logEvent": "Event",
+    "logState": "Result",
+    "logAttempts": "Attempts",
+    "logCode": "Detail",
+    "logEmpty": "Nothing has been sent yet",
+    "deferred": "Rotating a signing secret and replaying a delivery by hand are not part of this release."
+  }
+}

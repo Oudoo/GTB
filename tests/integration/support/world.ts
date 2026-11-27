@@ -195,6 +195,8 @@ export type WorldOptions = {
   now?: string;
   settings?: Partial<RuntimeSettings>;
   poolSize?: number;
+  /** Fake webhook transport/resolver for delivery tests. */
+  webhooks?: Parameters<typeof makeDeps>[0]["webhooks"];
 };
 
 /** Copy the seeded template into a new database and return a world bound to it. */
@@ -224,6 +226,7 @@ export async function createWorld(options: WorldOptions = {}): Promise<World> {
     appOrigin: ORIGIN,
     // Unknown outcomes are resolved explicitly in tests; no automatic inquiry races the assertions.
     settings: { autoInquiryDelaySeconds: 3600, settlementPollSeconds: 1, ...options.settings },
+    ...(options.webhooks ? { webhooks: options.webhooks } : {}),
   });
   return new World(name, db, clock, deps, withDatabase(ownerUrl, name));
 }

@@ -1,7 +1,23 @@
 import { EXPECTED_MIGRATION } from "@/server/db/migrations";
 import { query, type AnyOperation } from "../framework";
 
+export const API_VERSION = "0.1.0";
+
 export const healthOperations: AnyOperation[] = [
+  query({
+    id: "getOpenApi",
+    method: "GET",
+    path: "/openapi.json",
+    summary: "This API as an OpenAPI 3.1 document",
+    description: "Generated from the operation registry the server enforces. Describes a sandbox with simulated adapters.",
+    tag: "Health",
+    scope: "public",
+    handler: async () => {
+      // Loaded lazily: the registry imports this file.
+      const [{ ALL_OPERATIONS }, { buildOpenApi }] = await Promise.all([import("../registry"), import("../openapi")]);
+      return { raw: new Response(JSON.stringify(buildOpenApi(ALL_OPERATIONS, API_VERSION)), { status: 200, headers: { "content-type": "application/json; charset=utf-8" } }) };
+    },
+  }),
   query({
     id: "healthLive",
     method: "GET",

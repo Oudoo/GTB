@@ -108,7 +108,13 @@ export type CommandOperation<P, Q, B> = OperationBase<P, Q, B> & {
    * transaction as the business change.
    */
   target?: (request: OpRequest<P, Q, B>) => ResultRef;
-  execute: (request: OpRequest<P, Q, B>) => Promise<void>;
+  /**
+   * Performs the change. It may return `{ once }`: values the caller must receive exactly one
+   * time (a new API token, a webhook signing secret). They are added to the response of the
+   * request that created them and are never stored — an idempotent replay re-renders the
+   * resource without them.
+   */
+  execute: (request: OpRequest<P, Q, B>) => Promise<void | { once: Record<string, unknown> }>;
   /** Projection for the response and for every idempotent replay (current permissions). */
   render: (request: OpRequest<P, Q, B>, ref: ResultRef) => Promise<unknown>;
   /** Commands without idempotency (session sign-in/out) set this to false. */
@@ -491,16 +497,19 @@ export async function dispatch(registry: OperationRegistry, request: Request, in
       opRequest.newId = run.target ? opRequest.newId : begin.resultId;
       const liveRef: ResultRef = run.target ? ref : { type: ref.type, id: begin.resultId };
       store.idempotency = { recordId: begin.recordId, responseStatus: successStatus, completed: false };
+      let executed: void | { once: Record<string, unknown> };
       try {
         if (run.ifMatch && ifMatch === null) throw new DomainError("PRECONDITION_REQUIRED");
-        await run.execute(opRequest);
+        executed = await run.execute(opRequest);
       } catch (error) {
         if (!store.idempotency.completed) await abandonIdempotent(deps.db, begin.recordId).catch(() => undefined);
         throw error;
       }
       if (!store.idempotency.completed) await completeIdempotent(deps.db, begin.recordId, successStatus);
       const data = await run.render(opRequest, liveRef);
-      return jsonResponse(successStatus, { data, correlationId }, correlationId);
+      // Shown once: merged into this response only, never written to the idempotency record.
+      const first = executed && typeof data === "object" && data !== null ? { ...(data as Record<string, unknown>), ...executed.once } : data;
+      return jsonResponse(successStatus, { data: first, correlationId }, correlationId);
     } catch (error) {
       return problemResponse(toDomainError(error), correlationId);
     }

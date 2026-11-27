@@ -6,10 +6,12 @@ import type { CoreBankingPort } from "@/server/adapters/core/port";
 import { SimulatedCore } from "@/server/adapters/core/simulated-core";
 import { loadSandboxClock } from "@/server/adapters/core/simulator-state";
 import type { PaymentRailPort } from "@/server/adapters/rails/port";
+import { PinnedTransport, systemResolver, type WebhookTransport } from "@/server/adapters/webhooks/transport";
 import { SimulatedRail } from "@/server/adapters/rails/simulated-rail";
 import type { Clock } from "@/server/clock";
 import { getDb, type Db } from "@/server/db/client";
 import { getEnv } from "@/server/env";
+import type { Resolver } from "@/server/net/ssrf";
 
 export type RuntimeSettings = Readonly<{
   /** Delay before the worker's first automatic inquiry of an unknown outcome. */
@@ -42,6 +44,8 @@ export type Deps = Readonly<{
   storagePath: string;
   appOrigin: string;
   settings: RuntimeSettings;
+  /** Outbound webhooks: transport, DNS resolver, operator-allowlisted fixture origins, secret key. */
+  webhooks: Readonly<{ transport: WebhookTransport; resolver: Resolver; testAllowlist: readonly string[]; encryptionKey: Uint8Array }>;
 }>;
 
 function intFromEnv(name: string, fallback: number): number {
@@ -71,6 +75,7 @@ export function makeDeps(parts: {
   settings?: Partial<RuntimeSettings>;
   core?: CoreBankingPort;
   rail?: PaymentRailPort;
+  webhooks?: Partial<Deps["webhooks"]>;
 }): Deps {
   return Object.freeze({
     db: parts.db,
@@ -81,6 +86,13 @@ export function makeDeps(parts: {
     storagePath: parts.storagePath,
     appOrigin: parts.appOrigin,
     settings: { ...DEFAULT_SETTINGS, ...parts.settings },
+    webhooks: {
+      transport: parts.webhooks?.transport ?? new PinnedTransport(),
+      resolver: parts.webhooks?.resolver ?? systemResolver,
+      testAllowlist: parts.webhooks?.testAllowlist ?? [],
+      // Scripts and tests that never store a webhook secret get a throwaway key.
+      encryptionKey: parts.webhooks?.encryptionKey ?? crypto.getRandomValues(new Uint8Array(32)),
+    },
   });
 }
 
@@ -99,5 +111,6 @@ export async function getDeps(): Promise<Deps> {
     storagePath: env.storagePath,
     appOrigin: env.appOrigin,
     settings: settingsFromEnv(),
+    webhooks: { testAllowlist: env.webhookTestReceiverAllowlist, encryptionKey: env.dataEncryptionKey },
   });
 }
