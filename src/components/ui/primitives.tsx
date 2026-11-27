@@ -20,7 +20,9 @@ const TONE: Record<Tone, string> = {
 
 export function Badge({ tone = "neutral", children, className }: { tone?: Tone; children: ReactNode; className?: string }) {
   return (
-    <span className={clsx("inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-semibold whitespace-nowrap", TONE[tone], className)}>
+    // `max-w-full` + wrapping: at very large text a long label breaks inside the badge rather
+    // than forcing the page to scroll sideways (MOB-02).
+    <span className={clsx("inline-flex max-w-full items-center gap-1 rounded-2xl border px-2.5 py-0.5 text-start text-xs font-semibold [overflow-wrap:anywhere]", TONE[tone], className)}>
       {children}
     </span>
   );
@@ -96,9 +98,14 @@ export function PageHeader({ title, description, actions, back }: { title: React
  */
 export function Money({ value, className, signed }: { value: MoneyLike; className?: string; signed?: "DEBIT" | "CREDIT" }) {
   return (
-    <bdi dir="ltr" className={clsx("tabular whitespace-nowrap", className)} data-money={value.minor}>
-      {signed === "DEBIT" ? "−" : signed === "CREDIT" ? "+" : ""}
-      <span className="text-muted">{value.currency}</span> {amountText(value)}
+    // The number itself never breaks; at very large text sizes the currency code may wrap onto
+    // its own line instead of pushing the page sideways (MOB-02).
+    <bdi dir="ltr" className={clsx("tabular", className)} data-money={value.minor}>
+      <span className="whitespace-nowrap">
+        {signed === "DEBIT" ? "−" : signed === "CREDIT" ? "+" : ""}
+        <span className="text-muted">{value.currency}</span>
+      </span>{" "}
+      <span className="whitespace-nowrap">{amountText(value)}</span>
     </bdi>
   );
 }
@@ -236,7 +243,8 @@ export function Skeleton({ className }: { className?: string }) {
 
 export function SandboxPill({ label }: { label: string }) {
   return (
-    <Badge tone="sandbox" className="uppercase tracking-wide" >
+    // A long label wraps inside the pill at large text sizes instead of widening the page.
+    <Badge tone="sandbox" className="uppercase tracking-wide">
       <span aria-hidden="true">●</span>
       <span data-testid="sandbox-indicator">{label}</span>
     </Badge>

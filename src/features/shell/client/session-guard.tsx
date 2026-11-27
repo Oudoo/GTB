@@ -130,10 +130,18 @@ export function SessionGuard({ membershipId, children }: { membershipId: string;
           {state === "offline" ? t("offline.banner") : state === "ended" ? t("offline.sessionEnded") : t("offline.checking")}
         </div>
       ) : null}
-      {/* `inert` removes the masked subtree from focus order and the accessibility tree. */}
-      <div inert={masked} aria-hidden={masked} data-masked={masked} className={masked ? "pointer-events-none select-none opacity-0" : undefined}>
-        {children}
-      </div>
+      {/*
+        Session ended (signed out here or in another tab, or another workspace was chosen): the
+        protected view is REMOVED from the document, not merely hidden, so nothing of the
+        previous person or tenant can be read back from a restored page.
+        Unverified connection: the view stays mounted (unsent input is kept) but is not rendered
+        (`visibility: hidden`), and `inert` takes it out of focus order and the accessibility tree.
+      */}
+      {state === "ended" ? null : (
+        <div inert={masked} aria-hidden={masked} data-masked={masked} className={masked ? "pointer-events-none invisible select-none" : undefined}>
+          {children}
+        </div>
+      )}
     </>
   );
 }

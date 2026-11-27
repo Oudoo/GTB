@@ -6,7 +6,7 @@
  * development never registers a worker.
  */
 import { useTranslations } from "next-intl";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { hasUnsavedWork } from "./busy-guard";
 
 export function PwaRuntime() {
@@ -14,6 +14,8 @@ export function PwaRuntime() {
   const [waiting, setWaiting] = useState<ServiceWorker | null>(null);
   const [blocked, setBlocked] = useState(false);
   const [hidden, setHidden] = useState(false);
+  // True only after THIS tab's person pressed "update now".
+  const updateRequested = useRef(false);
 
   useEffect(() => {
     if (process.env.NODE_ENV !== "production") return;
@@ -23,8 +25,10 @@ export function PwaRuntime() {
     let reloading = false;
 
     const onControllerChange = () => {
-      // Fired after the person confirmed the update. A plain GET reload: no request is replayed.
-      if (reloading) return;
+      // The controller also changes when the worker takes control for the first time and when
+      // ANOTHER tab confirmed an update. Neither may reload this page under the person's hands:
+      // only an update confirmed here does. A plain GET reload: no request is replayed.
+      if (!updateRequested.current || reloading) return;
       reloading = true;
       window.location.reload();
     };
@@ -67,6 +71,7 @@ export function PwaRuntime() {
       return;
     }
     setBlocked(false);
+    updateRequested.current = true;
     waiting.postMessage({ type: "SKIP_WAITING" });
   }, [waiting]);
 

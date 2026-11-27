@@ -102,11 +102,11 @@ export default async function EmployeesPage({ params, searchParams }: { params: 
                   caption={t("payroll.employees.caption")}
                   empty={<EmptyState title={t("payroll.employees.empty")} description={t("payroll.employees.emptyHint")} />}
                   action={(employee) => (
-                    <details className="text-start">
+                    <details className="w-full max-w-xl text-start">
                       <summary className="min-touch inline-flex cursor-pointer items-center rounded-lg px-3 text-sm font-semibold text-accent" data-testid={`edit-${employee.employeeCode}`}>
                         {t("payroll.employees.edit")}
                       </summary>
-                      <div className="mt-2 w-full min-w-64 rounded-lg border border-border p-3 sm:min-w-96">
+                      <div className="mt-2 w-full rounded-lg border border-border p-3 md:min-w-[420px]">
                         <p className="mb-2 font-semibold">{t("payroll.employees.editTitle", { code: employee.employeeCode })}</p>
                         <EmployeeEditForm employee={employee} />
                       </div>

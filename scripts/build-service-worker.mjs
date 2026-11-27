@@ -30,6 +30,15 @@ function buildId() {
 const id = buildId();
 if (!/^[A-Za-z0-9._-]{1,64}$/.test(id)) throw new Error("BUILD_ID contains unsupported characters");
 
+// Each placeholder must occur exactly once, in code. A placeholder left behind (or one that
+// was replaced inside a comment instead) would make the worker throw and never install.
+for (const placeholder of ['"__BUILD_ID__"', "__PRECACHE__"]) {
+  const occurrences = template.split(placeholder).length - 1;
+  if (occurrences !== 1) throw new Error(`Service worker template must contain ${placeholder} exactly once (found ${occurrences})`);
+}
 const output = template.replace('"__BUILD_ID__"', JSON.stringify(id)).replace("__PRECACHE__", JSON.stringify(allowlist));
+if (/__BUILD_ID__|__PRECACHE__/.test(output)) throw new Error("Service worker output still contains a placeholder");
+// The generated file must at least parse as a script.
+new Function(output);
 writeFileSync(join(root, "public/sw.js"), output);
 console.log(`Service worker built: build ${id}, ${allowlist.length} precached public files.`);

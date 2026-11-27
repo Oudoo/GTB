@@ -71,11 +71,11 @@ export default async function AdminUsersPage({ params }: { params: Promise<{ loc
               empty={<EmptyState title={t("admin.users.caption")} />}
               action={(member) =>
                 member.isSelf || (!mayPropose && !maySuspend) ? null : (
-                  <details className="text-start">
+                  <details className="w-full max-w-xl text-start">
                     <summary className="min-touch inline-flex cursor-pointer items-center rounded-lg px-3 text-sm font-semibold text-accent" data-testid={`manage-${member.email.split("@")[0]}`}>
                       {t("common.actions.edit")}
                     </summary>
-                    <div className="mt-2 flex w-full min-w-64 flex-col gap-5 rounded-lg border border-border p-3 sm:min-w-[32rem]">
+                    <div className="mt-2 flex w-full flex-col gap-5 rounded-lg border border-border p-3 md:min-w-[480px]">
                       {mayPropose && member.status === "ACTIVE" ? (
                         <UserChangeForm
                           mode="change"

@@ -15,7 +15,8 @@
  *     IndexedDB or replay queue. Installing the app does not enable offline banking.
  *   - It never calls skipWaiting() on its own: the page asks the person first (PWA-07).
  *
- * `__BUILD_ID__` and `__PRECACHE__` are substituted by scripts/build-service-worker.mjs.
+ * The build identifier and the precache list below are substituted by
+ * scripts/build-service-worker.mjs (the placeholder names appear only in the code).
  */
 const BUILD_ID = "__BUILD_ID__";
 const CACHE_PREFIX = "alqarib-public-";
