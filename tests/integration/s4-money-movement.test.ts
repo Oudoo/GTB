@@ -2,8 +2,8 @@
  * Deeper money-movement checks on real PostgreSQL (document 07): concurrency, shared limits,
  * policy re-check at release, fee change, returns, internal transfers, window boundaries,
  * forged authority, audit immutability and sign-in throttling.
- * Covers I-02, I-03, I-06, I-07, I-09, I-10, I-12, I-13, I-14, I-15, I-16, I-17, I-20, I-22,
- * I-23, I-24, I-44 and I-52. Vote and idempotency races use 20 simultaneous requests.
+ * Covers I-02, I-03, I-04, I-06, I-07, I-09, I-10, I-12, I-13, I-14, I-15, I-16, I-17, I-20,
+ * I-22, I-23, I-24, I-44 and I-52. Vote and idempotency races use 20 simultaneous requests.
  */
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { JOB_ATTEMPT_ADVANCE } from "@/server/domain/execution/engine";
@@ -314,6 +314,154 @@ describe("agreement revisions under concurrency", () => {
     expect(await world.db.auditEvent.count({ where: { action: "agreement.version.activated", targetId: accepted.data.version.id } })).toBe(1);
     // The new terms apply from now on, once.
     expect((await submitPayment(world, { minor: "10000" })).fee.minor).toBe("750");
+  });
+});
+
+describe("an agreement binds only while it is in force", () => {
+  let world: World;
+  beforeAll(async () => {
+    world = await createWorld();
+  });
+  afterAll(async () => world.close());
+
+  const stateOf = async () => (await (await world.as("aMaker")).get<{ state: string }>("/agreement")).data.state;
+  const createPayment = async () => (await world.as("aMaker")).post("/payments", paymentBody({ minor: "50000" }));
+  const refusedWithoutAgreement = async (where: string) => {
+    const response = await createPayment();
+    expect(response.status, where).toBe(422);
+    expect(response.body.code, where).toBe("AGREEMENT_INACTIVE");
+  };
+
+  it("not before its start, not from its end, and never without signature evidence (I-04, AGR-01)", async () => {
+    const start = new Date(world.clock.now().getTime() + 3_600_000);
+    const end = new Date(start.getTime() + 2 * 3_600_000);
+    // No signature evidence: the proposal itself is refused.
+    const unsigned = { ...demoAgreementProposal(world.deps, "A", { effectiveFrom: start, effectiveUntil: end }), signatureEvidence: [] };
+    expect((await (await world.as("bankMaker")).post(`/bank/corporates/${CORPORATES.A.id}/agreement-proposals`, unsigned)).status).toBe(400);
+    expect(await world.db.agreementVersion.count({ where: { corporateId: CORPORATES.A.id } })).toBe(0);
+    expect(await stateOf()).toBe("DRAFT");
+    await refusedWithoutAgreement("draft");
+
+    // Approved by two people, but it starts in an hour: nothing may be paid yet.
+    await world.activateAgreement("A", { effectiveFrom: start, effectiveUntil: end });
+    expect(await stateOf()).toBe("NOT_YET_EFFECTIVE");
+    await refusedWithoutAgreement("before the start");
+    world.clock.advanceMs(3_600_000 - 1);
+    await refusedWithoutAgreement("one millisecond before the start");
+
+    // The start instant is inside the period — with no worker having run in between.
+    world.clock.advanceMs(1);
+    expect(await stateOf()).toBe("ACTIVE");
+    const before = await coreBalance(world, OPERATING.ref);
+    const paid = await payAndApprove(world, { minor: "10000" });
+    await drainAll(world);
+    expect((await getPayment(world, paid.id)).state).toBe("SETTLED");
+    expect(await coreBalance(world, OPERATING.ref)).toBe(before - 10_500n);
+
+    // A payment approved inside the period but not yet executed when the period ends.
+    world.clock.advanceMs(2 * 3_600_000 - 60_000 - 1);
+    expect(await stateOf()).toBe("ACTIVE");
+    const late = await payAndApprove(world, { minor: "20000" });
+    expect(late.state).toBe("QUEUED");
+    // The end instant is outside the period.
+    world.clock.advanceMs(60_000 + 1);
+    expect(await stateOf()).toBe("EXPIRED");
+    await refusedWithoutAgreement("at the end");
+    await drainAll(world);
+    const blocked = await getPayment(world, late.id);
+    expect(blocked.state).toBe("APPROVED");
+    expect(blocked.releaseBlockCode).toBe("AGREEMENT_INACTIVE");
+    expect(await coreBalance(world, OPERATING.ref)).toBe(before - 10_500n);
+    expect(await world.db.executionAttempt.count({ where: { instruction: { paymentId: late.id } } })).toBe(0);
+    // The contract and its history stay readable.
+    const history = await (await world.as("aMaker")).get<{ versions: Array<{ status: string }> }>("/agreement");
+    expect(history.status).toBe(200);
+    expect(history.data.versions.length).toBeGreaterThanOrEqual(1);
+  });
+});
+
+describe("emergency stop of an agreement", () => {
+  let world: World;
+  beforeAll(async () => {
+    world = await createWorld();
+    await world.activateAgreement("A");
+  });
+  afterAll(async () => world.close());
+
+  it("stops new and already approved payments at once; lifting it needs a second administrator (I-04, AGR-02)", async () => {
+    const corporate = CORPORATES.A.id;
+    const maker = await world.as("aMaker");
+    const bankMaker = await world.as("bankMaker");
+    const before = await coreBalance(world, OPERATING.ref);
+    const usageBefore = await usage(world);
+    const agreementVersion = async () => (await world.db.agreement.findUniqueOrThrow({ where: { corporateId: corporate } })).version;
+    const stateOf = async () => (await maker.get<{ state: string }>("/agreement")).data.state;
+
+    // One payment is approved and waiting for the worker; another is waiting for its approval.
+    const approved = await payAndApprove(world, { minor: "200000" });
+    expect(approved.state).toBe("QUEUED");
+    const pending = await submitPayment(world, { minor: "30000" });
+    expect((await usage(world)).reserved).toBe(usageBefore.reserved + 200_000n);
+
+    // A corporate person cannot stop or lift anything; a stale version is refused.
+    expect([403, 404]).toContain((await maker.post(`/bank/corporates/${corporate}/suspend`, { reason: "not a bank user" }, { ifMatch: await agreementVersion() })).status);
+    expect((await bankMaker.post(`/bank/corporates/${corporate}/suspend`, { reason: "stale version (test)" }, { ifMatch: (await agreementVersion()) - 1 })).status).toBe(412);
+    expect(await stateOf()).toBe("ACTIVE");
+    const stopped = await bankMaker.post(`/bank/corporates/${corporate}/suspend`, { reason: "Emergency stop requested by compliance (test)" }, { ifMatch: await agreementVersion() });
+    expect(stopped.status).toBe(200);
+    expect(await stateOf()).toBe("SUSPENDED");
+
+    // Nothing new, no approval, no release — immediately, before any worker ran.
+    const refused = await maker.post("/payments", paymentBody({ minor: "50000" }));
+    expect(refused.status).toBe(422);
+    expect(refused.body.code).toBe("AGREEMENT_INACTIVE");
+    const vote = await approve(world, pendingApproval(pending), "aChecker1");
+    expect(vote.status).toBe(422);
+    expect(vote.body.code).toBe("AGREEMENT_INACTIVE");
+    expect(await world.db.approvalVote.count({ where: { approvalRequestId: pendingApproval(pending) } })).toBe(0);
+    await drainAll(world);
+    const blocked = await getPayment(world, approved.id);
+    expect(blocked.state).toBe("APPROVED");
+    expect(blocked.releaseBlockCode).toBe("AGREEMENT_INACTIVE");
+    expect(await coreBalance(world, OPERATING.ref)).toBe(before);
+    expect(await world.db.executionAttempt.count({ where: { instruction: { paymentId: approved.id } } })).toBe(0);
+    // The blocked payment holds no limit while it cannot run.
+    expect(await usage(world)).toEqual(usageBefore);
+    // Asking for the release again does not help while the stop is in place.
+    const early = await maker.post(`/payments/${approved.id}/retry-release`, undefined, { ifMatch: blocked.version });
+    await drainAll(world);
+    expect([202, 409, 422]).toContain(early.status);
+    expect((await getPayment(world, approved.id)).state).toBe("APPROVED");
+    expect(await coreBalance(world, OPERATING.ref)).toBe(before);
+
+    // Lifting the stop: proposed by one administrator, decided by another.
+    const proposed = await bankMaker.post(`/bank/corporates/${corporate}/restore-proposals`, { reason: "Review completed, stop lifted (test)" });
+    expect(proposed.status).toBe(201);
+    const request = await world.db.approvalRequest.findFirstOrThrow({ where: { targetType: "agreementRestore", state: "PENDING" } });
+    expect((await approve(world, request.id, "bankMaker")).status).toBe(403);
+    expect(await stateOf()).toBe("SUSPENDED");
+    expect((await approve(world, request.id, "bankChecker")).status).toBe(200);
+    expect(await stateOf()).toBe("ACTIVE");
+
+    // Nothing starts by itself. The maker asks again; every control is re-checked; one debit.
+    await drainAll(world);
+    const still = await getPayment(world, approved.id);
+    expect(still.state).toBe("APPROVED");
+    expect(await coreBalance(world, OPERATING.ref)).toBe(before);
+    const retried = await maker.post(`/payments/${approved.id}/retry-release`, undefined, { ifMatch: still.version });
+    expect(retried.status).toBe(202);
+    await drainAll(world);
+    expect((await getPayment(world, approved.id)).state).toBe("SETTLED");
+    expect(await coreBalance(world, OPERATING.ref)).toBe(before - 200_500n);
+    expect(await world.db.simCoreJournal.count({ where: { executionReference: (await getPayment(world, approved.id)).executionReference as string } })).toBe(1);
+    // The pending one can now be decided as usual.
+    expect((await approve(world, pendingApproval(pending), "aChecker1")).status).toBe(200);
+
+    const actions = (await world.db.auditEvent.findMany({ where: { corporateId: corporate, action: { startsWith: "agreement." }, result: "SUCCESS" }, orderBy: { id: "asc" } })).map((event) => event.action);
+    expect(actions).toEqual(expect.arrayContaining(["agreement.suspended", "agreement.restore.proposed", "agreement.restored"]));
+    const stop = await world.db.auditEvent.findFirstOrThrow({ where: { corporateId: corporate, action: "agreement.suspended" } });
+    expect(stop.actorPersonId).toBe(personId("bankMaker"));
+    expect(stop.reason).toContain("Emergency stop");
   });
 });
 
