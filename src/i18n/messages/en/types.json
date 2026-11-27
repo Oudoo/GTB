@@ -116,7 +116,17 @@
     "BATCH_REJECTED": "Rejected by a checker",
     "BATCH_EXPIRED": "Approval period ended without a decision",
     "BATCH_CANCELLED": "Cancelled",
-    "BATCH_RETRY_CREATED": "Retry batch created from failed rows"
+    "BATCH_RETRY_CREATED": "Retry batch created from failed rows",
+    "DEPOSIT_CAPTURED": "Deposit captured at the branch",
+    "DEPOSIT_MANAGER_APPROVED": "Approved by a branch manager",
+    "DEPOSIT_MANAGER_REJECTED": "Rejected by a branch manager",
+    "DEPOSIT_EXPIRED": "Approval period ended without a decision",
+    "DEPOSIT_POSTED": "Posted — credited in the banking system",
+    "DEPOSIT_STATUS_UNKNOWN": "No confirmation received — result being checked",
+    "DEPOSIT_INQUIRY_NOT_FOUND": "Not found in the banking system — sent again under the same reference",
+    "DEPOSIT_POSTING_REJECTED": "The banking system rejected the posting — nothing credited",
+    "DEPOSIT_CHEQUE_CLEARED": "Cheque cleared",
+    "DEPOSIT_CHEQUE_RETURNED": "Cheque returned — nothing credited"
   },
   "failure": {
     "INSUFFICIENT_FUNDS": "The available balance was not enough for the amount and fee.",

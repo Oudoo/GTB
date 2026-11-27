@@ -1,9 +1,11 @@
 import { getTranslations } from "next-intl/server";
 import { Badge, Callout, Card, CardHeader, Code, EmptyState, Money, PageHeader } from "@/components/ui/primitives";
+import { ChequeEventButtons } from "@/features/collections/client/collection-forms";
 import { Forbidden, LoadError } from "@/features/common/states";
 import { AvailabilityToggle, ClockForm, FaultForm, OverlayForm, RemoveButton } from "@/features/operations/client/simulator-forms";
 import { businessDateOf } from "@/lib/calendar";
 import { formatDate, formatDateTime } from "@/lib/format";
+import { listPendingCheques } from "@/server/domain/collections/deposits";
 import { getSimulatorState } from "@/server/domain/operations/simulator";
 import { can, load, requireBankPage } from "@/server/page";
 
@@ -14,6 +16,7 @@ export default async function SimulatorPage({ params }: { params: Promise<{ loca
   const result = await load(() => getSimulatorState(deps, ctx));
   if (!result.ok) return <LoadError code={result.code} />;
   const state = result.data;
+  const cheques = await load(() => listPendingCheques(deps, ctx));
 
   return (
     <>
@@ -31,6 +34,24 @@ export default async function SimulatorPage({ params }: { params: Promise<{ loca
             <p className="text-sm text-muted" data-testid="sim-offset" data-minutes={state.clock.offsetMinutes}>{t("ops.sim.clockOffset", { minutes: Math.max(0, state.clock.offsetMinutes) })}</p>
             <ClockForm />
           </div>
+        </Card>
+
+        <Card data-testid="sim-cheques">
+          <CardHeader title={t("teller.cheques.title")} description={t("teller.cheques.help")} />
+          {cheques.ok && cheques.data.length > 0 ? (
+            <ul className="divide-y divide-border">
+              {cheques.data.map((cheque) => (
+                <li key={cheque.id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-5" data-cheque={cheque.intakeReference}>
+                  <span>
+                    <Code>{cheque.intakeReference}</Code> <Money value={cheque.amount} /> <bdi className="text-muted">{locale === "ar" ? cheque.corporate.nameAr : cheque.corporate.name}</bdi>
+                  </span>
+                  <ChequeEventButtons depositId={cheque.id} />
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <EmptyState title={t("teller.cheques.empty")} />
+          )}
         </Card>
 
         <Card data-testid="sim-availability">

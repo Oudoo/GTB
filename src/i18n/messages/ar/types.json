@@ -116,7 +116,17 @@
     "BATCH_REJECTED": "رفضها المدقق",
     "BATCH_EXPIRED": "انتهت مهلة الاعتماد دون قرار",
     "BATCH_CANCELLED": "أُلغيت",
-    "BATCH_RETRY_CREATED": "أُنشئت دفعة إعادة محاولة من الأسطر الفاشلة"
+    "BATCH_RETRY_CREATED": "أُنشئت دفعة إعادة محاولة من الأسطر الفاشلة",
+    "DEPOSIT_CAPTURED": "سُجّل الإيداع في الفرع",
+    "DEPOSIT_MANAGER_APPROVED": "اعتمده مدير الفرع",
+    "DEPOSIT_MANAGER_REJECTED": "رفضه مدير الفرع",
+    "DEPOSIT_EXPIRED": "انتهت مهلة الاعتماد دون قرار",
+    "DEPOSIT_POSTED": "قُيّد في النظام المصرفي",
+    "DEPOSIT_STATUS_UNKNOWN": "لم يصل تأكيد — النتيجة قيد التحقق",
+    "DEPOSIT_INQUIRY_NOT_FOUND": "غير موجود في النظام المصرفي — أُعيد إرساله بالمرجع نفسه",
+    "DEPOSIT_POSTING_REJECTED": "رفض النظام المصرفي القيد — لم يُقيَّد شيء",
+    "DEPOSIT_CHEQUE_CLEARED": "تم تحصيل الشيك",
+    "DEPOSIT_CHEQUE_RETURNED": "أُعيد الشيك — لم يُقيَّد شيء"
   },
   "failure": {
     "INSUFFICIENT_FUNDS": "الرصيد المتاح لم يكفِ للمبلغ والرسوم.",
