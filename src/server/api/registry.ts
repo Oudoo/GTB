@@ -1,0 +1,28 @@
+import { OperationRegistry, type AnyOperation } from "./framework";
+import { approvalOperations } from "./operations/approvals";
+import { agreementOperations, bankGovernanceOperations } from "./operations/governance";
+import { healthOperations } from "./operations/health";
+import { accountOperations, beneficiaryOperations, paymentOperations } from "./operations/payments";
+import { sessionOperations } from "./operations/session";
+
+/** Every `/api/v1` operation. A feature adds its own operations file and lists it here. */
+export const ALL_OPERATIONS: readonly AnyOperation[] = [
+  ...healthOperations,
+  ...sessionOperations,
+  ...accountOperations,
+  ...beneficiaryOperations,
+  ...paymentOperations,
+  ...approvalOperations,
+  ...agreementOperations,
+  ...bankGovernanceOperations,
+];
+
+let registry: OperationRegistry | undefined;
+
+export function getRegistry(): OperationRegistry {
+  if (!registry) {
+    registry = new OperationRegistry();
+    registry.register(ALL_OPERATIONS);
+  }
+  return registry;
+}

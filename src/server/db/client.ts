@@ -5,6 +5,7 @@
  */
 import { PrismaPg } from "@prisma/adapter-pg";
 import { Prisma, PrismaClient } from "@/generated/prisma/client";
+import { currentRequest } from "@/server/request-context";
 
 export type Db = PrismaClient;
 export type Tx = Prisma.TransactionClient;
@@ -82,6 +83,8 @@ export type TxOptions = {
   maxWaitMs?: number;
   /** Bounded retries for serialization failures/deadlocks (with jitter). */
   retries?: number;
+  /** Simulated-adapter transactions are not the platform's business transaction. */
+  skipIdempotency?: boolean;
 };
 
 const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
@@ -92,13 +95,32 @@ const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve,
  */
 export async function inTx<T>(db: Db, fn: (tx: Tx) => Promise<T>, options: TxOptions = {}): Promise<T> {
   const retries = options.retries ?? 4;
+  // The first business transaction of an idempotent API request completes the request's
+  // idempotency record in the SAME commit, so "effect happened" and "request recorded as done"
+  // can never disagree after a crash (PAY-04).
+  const pending = options.skipIdempotency ? undefined : currentRequest()?.idempotency;
+  const claim = pending && !pending.completed ? pending : undefined;
   for (let attempt = 0; ; attempt += 1) {
     try {
-      return await db.$transaction(fn, {
-        maxWait: options.maxWaitMs ?? 15_000,
-        timeout: options.timeoutMs ?? 30_000,
-        ...(options.isolationLevel ? { isolationLevel: options.isolationLevel } : {}),
-      });
+      const result = await db.$transaction(
+        async (tx) => {
+          const value = await fn(tx);
+          if (claim) {
+            await tx.idempotencyRecord.updateMany({
+              where: { id: claim.recordId, state: "IN_PROGRESS" },
+              data: { state: "COMPLETED", responseStatus: claim.responseStatus, completedAt: new Date() },
+            });
+          }
+          return value;
+        },
+        {
+          maxWait: options.maxWaitMs ?? 15_000,
+          timeout: options.timeoutMs ?? 30_000,
+          ...(options.isolationLevel ? { isolationLevel: options.isolationLevel } : {}),
+        },
+      );
+      if (claim) claim.completed = true;
+      return result;
     } catch (error) {
       if (attempt >= retries || !isRetryableTxError(error)) throw error;
       await sleep(10 + Math.floor(Math.random() * 40) * (attempt + 1));
