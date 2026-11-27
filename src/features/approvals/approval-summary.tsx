@@ -2,7 +2,12 @@ import { getLocale, getTranslations } from "next-intl/server";
 import { Badge, Callout, Code, DetailList, Money } from "@/components/ui/primitives";
 import { StatusBadge } from "@/components/ui/status";
 import { formatDateTime, moneyText, type MoneyLike } from "@/lib/format";
+import { AdminApprovalSummary } from "@/features/admin/approval-summary";
+import { BatchApprovalSummary } from "@/features/batches/approval-summary";
+import { RepairApprovalSummary } from "@/features/operations/approval-summary";
+import { DepositApprovalSummary } from "@/features/teller/approval-summary";
 import type { ApprovalView } from "@/server/domain/approvals/service";
+import { SummaryFields } from "./summary-fields";
 
 type Summary = Record<string, unknown> & { kind?: string };
 const asMoney = (value: unknown): MoneyLike | null =>
@@ -178,20 +183,10 @@ export async function ApprovalSummaryDetail({ approval, timeZone }: { approval: 
     );
   }
 
-  // Other proposal kinds (batches, payroll aggregates, access changes, deposits, repairs)
-  // render their own redacted summaries through `SummaryFields`.
+  // Each remaining proposal class renders its own REDACTED summary from its feature folder.
+  if (approval.klass === "BULK" || approval.klass === "PAYROLL") return <BatchApprovalSummary approval={approval} timeZone={timeZone} />;
+  if (approval.klass === "CORPORATE_ADMIN") return <AdminApprovalSummary approval={approval} timeZone={timeZone} />;
+  if (approval.klass === "BRANCH_DEPOSIT") return <DepositApprovalSummary approval={approval} timeZone={timeZone} />;
+  if (approval.klass === "BANK_REPAIR") return <RepairApprovalSummary approval={approval} timeZone={timeZone} />;
   return <SummaryFields summary={summary} />;
-}
-
-/** Generic renderer for a flat, already-redacted summary. Money-shaped values are formatted. */
-export function SummaryFields({ summary }: { summary: Summary }) {
-  const entries = Object.entries(summary).filter(([key, value]) => key !== "kind" && value !== null && value !== undefined && typeof value !== "object" || asMoney(value));
-  return (
-    <DetailList
-      items={entries.map(([key, value]) => {
-        const money = asMoney(value);
-        return { label: key, value: money ? <Money value={money} /> : <bdi>{String(value)}</bdi> };
-      })}
-    />
-  );
 }

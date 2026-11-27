@@ -12,7 +12,9 @@ import { DecisionForm } from "./client/decision-form";
 
 /** Where the full record of a proposal's target lives, when the caller can open it. */
 function targetHref(approval: ApprovalView, basePath: string): string | null {
-  const summary = (approval.summary ?? {}) as { kind?: string };
+  const summary = (approval.summary ?? {}) as { kind?: string; linkPath?: unknown };
+  // A feature may name the page of its own record (locale-less, set by server code only).
+  if (typeof summary.linkPath === "string" && summary.linkPath.startsWith("/") && !summary.linkPath.startsWith("//")) return summary.linkPath;
   if (approval.targetType === "payment") return `/payments/${approval.targetId}`;
   if (approval.targetType === "batch") return summary.kind === "PAYROLL" ? `/payroll/${approval.targetId}` : `/batches/${approval.targetId}`;
   if (approval.targetType === "agreementVersion") return `${basePath.replace(/\/approvals$/, "")}/agreement-versions/${approval.targetId}`;
