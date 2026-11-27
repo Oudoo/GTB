@@ -225,6 +225,17 @@ export const EMPLOYEES_A = [
   { code: "EMP-008", name: "Demo Staff Hadi", reference: "DEMO-LY-910008" },
 ] as const;
 
+/**
+ * Synthetic staff whose accounts exist in the directory but who are NOT in the employee master:
+ * the demo adds and imports them (PYR-01).
+ */
+export const NEW_STAFF_A = [
+  { code: "EMP-009", name: "Demo Staff Idris", reference: "DEMO-LY-910009" },
+  { code: "EMP-010", name: "Demo Staff Jamila", reference: "DEMO-LY-910010" },
+  { code: "EMP-011", name: "Demo Staff Kamal", reference: "DEMO-LY-910011" },
+  { code: "EMP-012", name: "Demo Staff Lina", reference: "DEMO-LY-910012" },
+] as const;
+
 /** Bulk-file recipients DEMO-LY-920001…920100. Two carry failure scenarios for partial results. */
 export const BULK_RECIPIENT_COUNT = 100;
 export const bulkRecipientRef = (n: number) => `DEMO-LY-92${String(n).padStart(4, "0")}`;

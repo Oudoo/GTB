@@ -39,6 +39,7 @@ import {
   CUSTOMERS,
   DIRECTORY,
   EMPLOYEES_A,
+  NEW_STAFF_A,
   PEOPLE,
   RAIL_EFFECTIVE_FROM,
   bulkRecipientName,
@@ -147,7 +148,7 @@ export async function seedDemo(deps: Deps, options: { password: string }): Promi
 
   // --- synthetic directory --------------------------------------------------------------------
   await ensureDirectoryAccounts(db, DIRECTORY.map((entry) => ({ reference: entry.reference, holderName: entry.holderName, bankName: entry.bankName, scenario: entry.scenario })));
-  await ensureDirectoryAccounts(db, EMPLOYEES_A.map((employee) => ({ reference: employee.reference, holderName: employee.name, bankName: "Sahel Demo Bank" })));
+  await ensureDirectoryAccounts(db, [...EMPLOYEES_A, ...NEW_STAFF_A].map((employee) => ({ reference: employee.reference, holderName: employee.name, bankName: "Sahel Demo Bank" })));
   await ensureDirectoryAccounts(
     db,
     Array.from({ length: BULK_RECIPIENT_COUNT }, (_unused, index) => {

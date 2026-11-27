@@ -136,7 +136,9 @@ async function project(deps: Deps, ctx: AuthContext, rows: AttemptRow[]): Promis
         amount: confidential ? null : minorToJson(instruction.amountMinor, instruction.currency),
         fee: confidential ? null : minorToJson(instruction.feeMinor, instruction.currency),
         destinationName: confidential ? null : instruction.destinationName,
-        destinationMasked: confidential ? null : maskReference(instruction.destinationReference),
+        // Payroll: no amount and no name for anyone at the bank. A specifically granted
+        // payroll-support role sees the masked account as the minimum diagnostic (SEC-04).
+        destinationMasked: confidential && !ctx.permissions.has("bank.payroll.support") ? null : maskReference(instruction.destinationReference),
         confidential,
         reference: instruction.paymentId ? (paymentReference.get(instruction.paymentId) ?? null) : null,
       },

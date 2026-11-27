@@ -31,7 +31,15 @@ export const resolutionSchema = z.strictObject({
 });
 
 /** What the platform expects the core to hold for one reference on one business date. */
-export type ExpectedPosting = { executionReference: string; corporateId: string | null; principalMinor: bigint; feeMinor: bigint; source: string };
+export type ExpectedPosting = {
+  executionReference: string;
+  corporateId: string | null;
+  principalMinor: bigint;
+  feeMinor: bigint;
+  source: string;
+  /** Payroll line: a break on it records that amounts differ, never the amounts (SEC-04). */
+  confidential?: boolean;
+};
 
 type ExpectedSource = (db: DbOrTx, scope: { bankId: string; businessDate: LocalDate; timeZone: string }) => Promise<ExpectedPosting[]>;
 const sources: ExpectedSource[] = [];
@@ -46,7 +54,7 @@ registerReconciliationSource(async (db, scope) => {
   const day = localDateToDbDate(scope.businessDate);
   const booked = await db.executionAttempt.findMany({
     where: { bankId: scope.bankId, state: "BOOKED", bookedBusinessDate: day },
-    select: { executionReference: true, corporateId: true, instruction: { select: { amountMinor: true, feeMinor: true } } },
+    select: { executionReference: true, corporateId: true, instruction: { select: { amountMinor: true, feeMinor: true, confidential: true } } },
   });
   const lines: ExpectedPosting[] = booked.map((attempt) => ({
     executionReference: attempt.executionReference,
@@ -54,19 +62,20 @@ registerReconciliationSource(async (db, scope) => {
     principalMinor: attempt.instruction.amountMinor,
     feeMinor: attempt.instruction.feeMinor,
     source: "EXECUTION",
+    confidential: attempt.instruction.confidential,
   }));
   // A return books a compensating journal under "<reference>R" on the day it was returned.
   const start = new Date(day.getTime() - 86_400_000);
   const end = new Date(day.getTime() + 2 * 86_400_000);
   const returned = await db.businessInstruction.findMany({
     where: { bankId: scope.bankId, state: "RETURNED", returnedAt: { gte: start, lt: end } },
-    select: { corporateId: true, amountMinor: true, returnedAt: true, attempts: { where: { state: "BOOKED" }, select: { executionReference: true } } },
+    select: { corporateId: true, amountMinor: true, confidential: true, returnedAt: true, attempts: { where: { state: "BOOKED" }, select: { executionReference: true } } },
   });
   for (const instruction of returned) {
     if (!instruction.returnedAt || businessDateOf(instruction.returnedAt, scope.timeZone) !== scope.businessDate) continue;
     const reference = instruction.attempts[0]?.executionReference;
     if (!reference) continue;
-    lines.push({ executionReference: `${reference}R`, corporateId: instruction.corporateId, principalMinor: instruction.amountMinor, feeMinor: 0n, source: "RETURN" });
+    lines.push({ executionReference: `${reference}R`, corporateId: instruction.corporateId, principalMinor: instruction.amountMinor, feeMinor: 0n, source: "RETURN", confidential: instruction.confidential });
   }
   return lines;
 });
@@ -131,7 +140,8 @@ export async function executeReconciliationRun(deps: Deps, runId: string): Promi
   const base = { runId, bankId: run.bankId };
   for (const line of expected) {
     const found = coreByRef.get(line.executionReference) ?? [];
-    const expectedJson = { principalMinor: money(line.principalMinor), feeMinor: money(line.feeMinor), source: line.source };
+    // A payroll line is compared exactly like any other, but its amounts are not written down.
+    const expectedJson = line.confidential ? { confidential: true, source: line.source } : { principalMinor: money(line.principalMinor), feeMinor: money(line.feeMinor), source: line.source };
     if (found.length === 0) {
       breaks.push({ ...base, corporateId: line.corporateId, kind: "MISSING_IN_CORE", executionReference: line.executionReference, expected: expectedJson });
     } else if (found.length > 1) {
@@ -145,7 +155,7 @@ export async function executeReconciliationRun(deps: Deps, runId: string): Promi
           kind: "AMOUNT_MISMATCH",
           executionReference: line.executionReference,
           expected: expectedJson,
-          actual: { principalMinor: money(actual.principalMinor), feeMinor: money(actual.feeMinor), kind: actual.kind },
+          actual: line.confidential ? { confidential: true, kind: actual.kind } : { principalMinor: money(actual.principalMinor), feeMinor: money(actual.feeMinor), kind: actual.kind },
         });
       } else {
         matched += 1;
@@ -158,14 +168,16 @@ export async function executeReconciliationRun(deps: Deps, runId: string): Promi
     // instruction is in another state (status break) or it is unknown to the platform.
     const attempts = await deps.db.executionAttempt.findMany({
       where: { bankId: run.bankId, executionReference: { in: unexpected.map((reference) => reference.replace(/R$/, "")) } },
-      select: { executionReference: true, state: true, corporateId: true },
+      select: { executionReference: true, state: true, corporateId: true, instruction: { select: { confidential: true } } },
     });
     const attemptByRef = new Map(attempts.map((attempt) => [attempt.executionReference, attempt]));
     for (const reference of unexpected) {
       const lines = coreByRef.get(reference) as typeof coreLines;
       const first = lines[0] as (typeof coreLines)[number];
       const attempt = attemptByRef.get(reference) ?? attemptByRef.get(reference.replace(/R$/, ""));
-      const actual = { principalMinor: money(first.principalMinor), feeMinor: money(first.feeMinor), kind: first.kind, count: lines.length };
+      const actual = attempt?.instruction.confidential
+        ? { confidential: true, kind: first.kind, count: lines.length }
+        : { principalMinor: money(first.principalMinor), feeMinor: money(first.feeMinor), kind: first.kind, count: lines.length };
       breaks.push(
         attempt
           ? { ...base, corporateId: attempt.corporateId, kind: "STATUS_MISMATCH", executionReference: reference, expected: { platformState: attempt.state }, actual }

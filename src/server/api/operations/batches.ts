@@ -1,4 +1,196 @@
-/** Bulk transfers (S5): templates, import, review, approval, results, retry. */
-import type { AnyOperation } from "../framework";
+/** Bulk transfers and payroll runs (S5/S6): templates, upload, review, approval, results, retry. */
+import { z } from "zod";
+import { acceptRowsSchema, batchListQuerySchema, batchRetrySchema, batchRowsQuerySchema, batchSubmitSchema, templateParamSchema, templateQuerySchema } from "@/contracts/batches";
+import { idParamSchema, reasonSchema } from "@/contracts/common";
+import { acceptRows, cancelBatch, retryBatchRelease, retryFailedRows, submitBatch, uploadBatch } from "@/server/domain/batches/service";
+import { batchErrorsCsv, batchResultCsv, getBatch, listBatchRows, listBatches, templateDownload } from "@/server/domain/batches/views";
+import { command, query, type AnyOperation } from "../framework";
 
-export const batchOperations: AnyOperation[] = [];
+type IdParams = z.infer<typeof idParamSchema>;
+const cancelBody = z.strictObject({ reason: reasonSchema });
+const READ = ["batches.read", "batches.create", "payroll.aggregate.read", "payroll.detail"] as const;
+const WRITE = ["batches.create", "payroll.detail"] as const;
+
+export const batchOperations: AnyOperation[] = [
+  query<z.infer<typeof templateParamSchema>, z.infer<typeof templateQuerySchema>>({
+    id: "downloadTemplate",
+    method: "GET",
+    path: "/templates/{kind}",
+    summary: "Versioned CSV or XLSX import template",
+    description: "The payroll and employee templates need the payroll-detail permission. Templates contain synthetic example rows only.",
+    tag: "Batches",
+    scope: "corporate",
+    permission: READ,
+    credentialScope: "batches:read",
+    params: templateParamSchema,
+    query: templateQuerySchema,
+    handler: async ({ ctx, params, query: q }) => ({ raw: templateDownload(ctx, params.kind, q.format ?? "csv") }),
+  }),
+  query<Record<string, never>, z.infer<typeof batchListQuerySchema>>({
+    id: "listBatches",
+    method: "GET",
+    path: "/batches",
+    summary: "Bulk and payroll batches for readable accounts",
+    description: "Payroll batches appear as aggregates only.",
+    tag: "Batches",
+    scope: "corporate",
+    permission: READ,
+    credentialScope: "batches:read",
+    query: batchListQuerySchema,
+    handler: async ({ deps, ctx, query: q }) => {
+      const result = await listBatches(deps, ctx, q);
+      return { data: result.items, page: { nextCursor: result.nextCursor, hasMore: result.nextCursor !== null } };
+    },
+  }),
+  command({
+    id: "uploadBatch",
+    method: "POST",
+    path: "/batches/uploads",
+    summary: "Bounded multipart upload of a bulk or payroll file",
+    description:
+      "Fields: kind, sourceAccountId, templateVersion, rail, executionMode, executeAt?, correction?, file. The file is parsed with hard bounds; formulas, macros and unknown columns reject it. Row validation runs as a worker job: the batch is returned in state VALIDATING.",
+    tag: "Batches",
+    scope: "corporate",
+    permission: WRITE,
+    multipart: true,
+    maxBodyBytes: 6 * 1024 * 1024,
+    successStatus: 202,
+    execute: async ({ deps, ctx, form, newId }) => uploadBatch(deps, ctx, form, newId),
+    render: async ({ deps, ctx }, ref) => getBatch(deps, ctx, ref.id),
+  }),
+  query<IdParams>({
+    id: "getBatch",
+    method: "GET",
+    path: "/batches/{id}",
+    summary: "Batch summary, progress, fees and derived state",
+    description: "Aggregates only. A payroll batch never exposes an employee or a single amount here.",
+    tag: "Batches",
+    scope: "corporate",
+    permission: READ,
+    credentialScope: "batches:read",
+    params: idParamSchema,
+    handler: async ({ deps, ctx, params }) => ({ data: await getBatch(deps, ctx, params.id) }),
+  }),
+  query<IdParams, z.infer<typeof batchRowsQuerySchema>>({
+    id: "listBatchRows",
+    method: "GET",
+    path: "/batches/{id}/rows",
+    summary: "Validated and executed rows with a permission-aware projection",
+    description:
+      "Bulk rows show beneficiary, masked account and amount. Payroll rows are a masked shell (line and state) unless the caller holds the payroll-detail permission; reading payroll detail is audited.",
+    tag: "Batches",
+    scope: "corporate",
+    permission: READ,
+    credentialScope: "batches:read",
+    params: idParamSchema,
+    query: batchRowsQuerySchema,
+    handler: async ({ deps, ctx, params, query: q }) => {
+      const result = await listBatchRows(deps, ctx, params.id, q);
+      return { data: { projection: result.projection, items: result.items }, page: { nextCursor: result.nextCursor, hasMore: result.nextCursor !== null } };
+    },
+  }),
+  query<IdParams>({
+    id: "downloadBatchErrors",
+    method: "GET",
+    path: "/batches/{id}/errors",
+    summary: "Formula-safe error report of invalid and duplicate rows",
+    description: "Problem codes by line. For payroll it needs the payroll-detail permission.",
+    tag: "Batches",
+    scope: "corporate",
+    permission: READ,
+    params: idParamSchema,
+    handler: async ({ deps, ctx, params }) => ({ raw: await batchErrorsCsv(deps, ctx, params.id) }),
+  }),
+  query<IdParams>({
+    id: "downloadBatchResult",
+    method: "GET",
+    path: "/batches/{id}/result",
+    summary: "Formula-safe result file with one line per accepted row",
+    description: "For payroll it needs the payroll-detail permission; aggregate readers use the batch summary.",
+    tag: "Batches",
+    scope: "corporate",
+    permission: READ,
+    params: idParamSchema,
+    handler: async ({ deps, ctx, params }) => ({ raw: await batchResultCsv(deps, ctx, params.id) }),
+  }),
+  command<IdParams, Record<string, never>, z.infer<typeof acceptRowsSchema>>({
+    id: "acceptBatchRows",
+    method: "POST",
+    path: "/batches/{id}/accept-rows",
+    summary: "Confirm the row set to submit",
+    description:
+      "Only valid rows can be accepted. Leaving out invalid rows needs an explicit confirmation and warnings an explicit acknowledgment. The server recomputes count, total, fees and the digest; earlier approvals become void.",
+    tag: "Batches",
+    scope: "corporate",
+    permission: WRITE,
+    params: idParamSchema,
+    body: acceptRowsSchema,
+    ifMatch: true,
+    target: ({ params }) => ({ type: "batch", id: params.id }),
+    execute: async ({ deps, ctx, params, body, expectedVersion }) => acceptRows(deps, ctx, params.id, body, expectedVersion),
+    render: async ({ deps, ctx }, ref) => getBatch(deps, ctx, ref.id),
+  }),
+  command<IdParams, Record<string, never>, z.infer<typeof batchSubmitSchema>>({
+    id: "submitBatch",
+    method: "POST",
+    path: "/batches/{id}/submit",
+    summary: "Freeze the accepted set and request approval",
+    description: "Nothing is debited and nothing executes before approval.",
+    tag: "Batches",
+    scope: "corporate",
+    permission: WRITE,
+    params: idParamSchema,
+    body: batchSubmitSchema,
+    ifMatch: true,
+    successStatus: 202,
+    target: ({ params }) => ({ type: "batch", id: params.id }),
+    execute: async ({ deps, ctx, params, body, expectedVersion }) => submitBatch(deps, ctx, params.id, body, expectedVersion),
+    render: async ({ deps, ctx }, ref) => getBatch(deps, ctx, ref.id),
+  }),
+  command<IdParams, Record<string, never>, z.infer<typeof cancelBody>>({
+    id: "cancelBatch",
+    method: "POST",
+    path: "/batches/{id}/cancel",
+    summary: "Cancel a whole batch that has not started executing",
+    description: "A batch with rows in flight or unknown cannot be cancelled.",
+    tag: "Batches",
+    scope: "corporate",
+    permission: WRITE,
+    params: idParamSchema,
+    body: cancelBody,
+    ifMatch: true,
+    target: ({ params }) => ({ type: "batch", id: params.id }),
+    execute: async ({ deps, ctx, params, body, expectedVersion }) => cancelBatch(deps, ctx, params.id, expectedVersion, body.reason),
+    render: async ({ deps, ctx }, ref) => getBatch(deps, ctx, ref.id),
+  }),
+  command<IdParams, Record<string, never>, z.infer<typeof batchRetrySchema>>({
+    id: "retryBatchRows",
+    method: "POST",
+    path: "/batches/{id}/retry",
+    summary: "Create a new batch from rows that failed before posting",
+    description:
+      "Settled, returned, unknown and in-flight rows are never eligible. The new batch needs its own confirmation and approval. One live retry per original row.",
+    tag: "Batches",
+    scope: "corporate",
+    permission: WRITE,
+    params: idParamSchema,
+    body: batchRetrySchema,
+    successStatus: 201,
+    execute: async ({ deps, ctx, params, body, newId }) => retryFailedRows(deps, ctx, params.id, body.rowIds, newId),
+    render: async ({ deps, ctx }, ref) => getBatch(deps, ctx, ref.id),
+  }),
+  command<IdParams>({
+    id: "retryBatchRelease",
+    method: "POST",
+    path: "/batches/{id}/retry-release",
+    summary: "Ask for a blocked release again after the cause was fixed",
+    tag: "Batches",
+    scope: "corporate",
+    permission: WRITE,
+    params: idParamSchema,
+    ifMatch: true,
+    target: ({ params }) => ({ type: "batch", id: params.id }),
+    execute: async ({ deps, ctx, params, expectedVersion }) => retryBatchRelease(deps, ctx, params.id, expectedVersion),
+    render: async ({ deps, ctx }, ref) => getBatch(deps, ctx, ref.id),
+  }),
+];
