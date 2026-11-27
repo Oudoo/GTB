@@ -19,6 +19,7 @@ export const ACTORS = {
   aChecker1: "a.checker1",
   aChecker2: "a.checker2",
   aPayroll: "a.payroll",
+  aTreasurer: "a.treasurer",
   aFinance: "a.finance",
   aViewer: "a.viewer",
   aDual: "a.dual",

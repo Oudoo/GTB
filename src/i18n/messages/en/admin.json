@@ -1,1 +1,118 @@
-{}
+{
+  "users": {
+    "title": "Users and access",
+    "description": "Who can do what for your company. Every change is a proposal that a different person approves, and stays inside the limits your bank signed.",
+    "caption": "Members",
+    "name": "Name",
+    "email": "E-mail",
+    "roles": "Roles",
+    "status": "Status",
+    "accounts": "Accounts",
+    "limits": "Allowance",
+    "limitsValue": "{perItem} per payment · {daily} per day",
+    "noLimits": "None",
+    "you": "You",
+    "readOnly": "You can view members. Proposing changes needs the administrator role.",
+    "rights": {
+      "read": "View",
+      "debit": "Pay from",
+      "approve": "Approve",
+      "report": "Export"
+    }
+  },
+  "roles": {
+    "CORPORATE_ADMIN": "Administrator",
+    "MAKER": "Maker",
+    "CHECKER": "Checker",
+    "TREASURER": "Treasurer",
+    "FINANCE": "Finance",
+    "PAYROLL_OFFICER": "Payroll officer",
+    "VIEWER": "Viewer",
+    "API_INTEGRATOR": "API integrator"
+  },
+  "change": {
+    "title": "Propose an access change",
+    "inviteTitle": "Invite a new member",
+    "member": "Member",
+    "email": "E-mail address",
+    "displayName": "Full name",
+    "roles": "Roles",
+    "accountRights": "Rights on accounts",
+    "limitsTitle": "Payment allowance (optional)",
+    "limitsHelp": "Leave both empty for a member who does not create payments. The bank's agreement sets the maximum.",
+    "perItem": "Per payment (LYD)",
+    "daily": "Per day (LYD)",
+    "reason": "Reason",
+    "propose": "Send for approval",
+    "invite": "Send invitation for approval",
+    "help": "You state the complete access the member should have. It replaces their current access once a different person approves. You cannot change your own access.",
+    "chooseRole": "Choose at least one role.",
+    "limitsInvalid": "Enter both amounts in LYD, or leave both empty.",
+    "sent": "Sent for approval. Nothing changes until a different person approves."
+  },
+  "suspend": {
+    "action": "Suspend",
+    "title": "Suspend {name}",
+    "help": "Access ends immediately and the person is signed out everywhere. Giving access back needs an approved proposal.",
+    "confirm": "Suspend now",
+    "reactivate": "Propose reactivation"
+  },
+  "proposals": {
+    "title": "Access proposals",
+    "caption": "Access proposals",
+    "kind": "Change",
+    "target": "Member",
+    "status": "Status",
+    "by": "Proposed by",
+    "empty": "No proposals yet",
+    "review": "Review",
+    "kinds": {
+      "INVITE": "Invitation",
+      "ROLE_CHANGE": "Role change",
+      "GRANT_CHANGE": "Account rights change",
+      "LIMIT_CHANGE": "Allowance change",
+      "REACTIVATE": "Reactivation"
+    }
+  },
+  "inbox": {
+    "title": "Invitation links (sandbox inbox)",
+    "help": "The sandbox sends no e-mail. Approved invitations appear here so you can pass the link to the person. A link works once and expires after 7 days.",
+    "empty": "No invitations",
+    "used": "Used or expired",
+    "open": "Invitation link"
+  },
+  "approval": {
+    "title": "Access change",
+    "member": "Member",
+    "change": "Change",
+    "roles": "Roles after approval",
+    "previousRoles": "Roles now",
+    "accounts": "Accounts with access",
+    "debitAccounts": "Accounts they can pay from",
+    "approveAccounts": "Accounts they can approve for",
+    "perItemLimit": "Allowance per payment",
+    "dailyLimit": "Allowance per day",
+    "reason": "Reason",
+    "note": "Approving applies exactly this access. You cannot approve a change you proposed or a change to your own access."
+  },
+  "rules": {
+    "title": "Approval rules",
+    "unavailable": "Not available in this release",
+    "body": "Your company's approval levels are the ones your bank set in the signed agreement. Proposing stricter company rules is planned and is not part of this release.",
+    "viewAgreement": "View the agreement and its approval levels"
+  },
+  "invite": {
+    "title": "Accept your invitation",
+    "intro": "{company} invited {email} to its Al Qarib sandbox workspace.",
+    "password": "Choose a password",
+    "passwordHint": "At least 12 characters.",
+    "confirm": "Repeat the password",
+    "mismatch": "The two passwords are not the same.",
+    "existing": "You already have a sign-in for this address. Accepting adds this company to it; your password does not change.",
+    "accept": "Accept invitation",
+    "done": "Invitation accepted. You can sign in now.",
+    "signIn": "Go to sign-in",
+    "invalidTitle": "This invitation cannot be used",
+    "invalidBody": "The link is wrong, was already used or has expired. Ask your administrator for a new invitation."
+  }
+}

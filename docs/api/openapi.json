@@ -15,6 +15,9 @@
       "name": "Accounts"
     },
     {
+      "name": "Administration"
+    },
+    {
       "name": "Agreement"
     },
     {
@@ -4860,6 +4863,808 @@
                 "schema": {
                   "$ref": "#/components/schemas/Problem"
                 }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/users": {
+      "get": {
+        "operationId": "listUsers",
+        "summary": "Members of the corporate with roles, account rights and allowances",
+        "description": "Never returns a password, a hash or a session.",
+        "tags": [
+          "Administration"
+        ],
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "x-workspace": "corporate",
+        "x-required-permission": [
+          "admin.users.read"
+        ],
+        "x-session-only": true,
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {},
+                    "page": {
+                      "$ref": "#/components/schemas/Page"
+                    },
+                    "correlationId": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "correlationId"
+                  ]
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Problem details (RFC 9457) with a stable `code`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/user-proposals": {
+      "get": {
+        "operationId": "listUserProposals",
+        "summary": "Access-change proposals and their state",
+        "tags": [
+          "Administration"
+        ],
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "x-workspace": "corporate",
+        "x-required-permission": [
+          "admin.users.read"
+        ],
+        "x-session-only": true,
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {},
+                    "page": {
+                      "$ref": "#/components/schemas/Page"
+                    },
+                    "correlationId": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "correlationId"
+                  ]
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Problem details (RFC 9457) with a stable `code`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "proposeUserChange",
+        "summary": "Propose an invitation, an access change or a reactivation",
+        "description": "Carries the full desired access (roles, account rights, user allowance). Checked against the signed agreement; applied only after a different eligible person approves. Nobody can propose a change to their own access.",
+        "tags": [
+          "Administration"
+        ],
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "description": "One key per logical action; reuse it when retrying after a lost response.",
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 128
+            }
+          }
+        ],
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "x-workspace": "corporate",
+        "x-required-permission": [
+          "admin.users.propose"
+        ],
+        "x-session-only": true,
+        "responses": {
+          "202": {
+            "description": "Accepted — the work continues in the background",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {},
+                    "page": {
+                      "$ref": "#/components/schemas/Page"
+                    },
+                    "correlationId": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "correlationId"
+                  ]
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Problem details (RFC 9457) with a stable `code`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "const": "INVITE"
+                      },
+                      "email": {
+                        "type": "string",
+                        "maxLength": 200,
+                        "format": "email",
+                        "pattern": "^(?:[A-Za-z0-9_'+\\-]+\\.)*[A-Za-z0-9_'+\\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
+                      },
+                      "displayName": {
+                        "type": "string",
+                        "minLength": 2,
+                        "maxLength": 120
+                      },
+                      "roles": {
+                        "minItems": 1,
+                        "maxItems": 8,
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "enum": [
+                            "CORPORATE_ADMIN",
+                            "MAKER",
+                            "CHECKER",
+                            "TREASURER",
+                            "FINANCE",
+                            "PAYROLL_OFFICER",
+                            "VIEWER",
+                            "API_INTEGRATOR"
+                          ]
+                        }
+                      },
+                      "grants": {
+                        "maxItems": 20,
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "accountId": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "read": {
+                              "type": "boolean"
+                            },
+                            "debit": {
+                              "type": "boolean"
+                            },
+                            "approve": {
+                              "type": "boolean"
+                            },
+                            "report": {
+                              "type": "boolean"
+                            }
+                          },
+                          "required": [
+                            "accountId",
+                            "read",
+                            "debit",
+                            "approve",
+                            "report"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "limits": {
+                        "anyOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "perItem": {
+                                "type": "object",
+                                "properties": {
+                                  "currency": {
+                                    "type": "string",
+                                    "enum": [
+                                      "LYD",
+                                      "USD",
+                                      "EUR"
+                                    ]
+                                  },
+                                  "minor": {
+                                    "type": "string",
+                                    "pattern": "^(0|[1-9][0-9]{0,15})$"
+                                  }
+                                },
+                                "required": [
+                                  "currency",
+                                  "minor"
+                                ],
+                                "additionalProperties": false
+                              },
+                              "daily": {
+                                "type": "object",
+                                "properties": {
+                                  "currency": {
+                                    "type": "string",
+                                    "enum": [
+                                      "LYD",
+                                      "USD",
+                                      "EUR"
+                                    ]
+                                  },
+                                  "minor": {
+                                    "type": "string",
+                                    "pattern": "^(0|[1-9][0-9]{0,15})$"
+                                  }
+                                },
+                                "required": [
+                                  "currency",
+                                  "minor"
+                                ],
+                                "additionalProperties": false
+                              }
+                            },
+                            "required": [
+                              "perItem",
+                              "daily"
+                            ],
+                            "additionalProperties": false
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "reason": {
+                        "type": "string",
+                        "minLength": 3,
+                        "maxLength": 500
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "email",
+                      "displayName",
+                      "roles",
+                      "grants",
+                      "limits",
+                      "reason"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "const": "CHANGE_ACCESS"
+                      },
+                      "membershipId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                      },
+                      "roles": {
+                        "minItems": 1,
+                        "maxItems": 8,
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "enum": [
+                            "CORPORATE_ADMIN",
+                            "MAKER",
+                            "CHECKER",
+                            "TREASURER",
+                            "FINANCE",
+                            "PAYROLL_OFFICER",
+                            "VIEWER",
+                            "API_INTEGRATOR"
+                          ]
+                        }
+                      },
+                      "grants": {
+                        "maxItems": 20,
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "accountId": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "read": {
+                              "type": "boolean"
+                            },
+                            "debit": {
+                              "type": "boolean"
+                            },
+                            "approve": {
+                              "type": "boolean"
+                            },
+                            "report": {
+                              "type": "boolean"
+                            }
+                          },
+                          "required": [
+                            "accountId",
+                            "read",
+                            "debit",
+                            "approve",
+                            "report"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "limits": {
+                        "anyOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "perItem": {
+                                "type": "object",
+                                "properties": {
+                                  "currency": {
+                                    "type": "string",
+                                    "enum": [
+                                      "LYD",
+                                      "USD",
+                                      "EUR"
+                                    ]
+                                  },
+                                  "minor": {
+                                    "type": "string",
+                                    "pattern": "^(0|[1-9][0-9]{0,15})$"
+                                  }
+                                },
+                                "required": [
+                                  "currency",
+                                  "minor"
+                                ],
+                                "additionalProperties": false
+                              },
+                              "daily": {
+                                "type": "object",
+                                "properties": {
+                                  "currency": {
+                                    "type": "string",
+                                    "enum": [
+                                      "LYD",
+                                      "USD",
+                                      "EUR"
+                                    ]
+                                  },
+                                  "minor": {
+                                    "type": "string",
+                                    "pattern": "^(0|[1-9][0-9]{0,15})$"
+                                  }
+                                },
+                                "required": [
+                                  "currency",
+                                  "minor"
+                                ],
+                                "additionalProperties": false
+                              }
+                            },
+                            "required": [
+                              "perItem",
+                              "daily"
+                            ],
+                            "additionalProperties": false
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "reason": {
+                        "type": "string",
+                        "minLength": 3,
+                        "maxLength": 500
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "membershipId",
+                      "roles",
+                      "grants",
+                      "limits",
+                      "reason"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "const": "REACTIVATE"
+                      },
+                      "membershipId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                      },
+                      "reason": {
+                        "type": "string",
+                        "minLength": 3,
+                        "maxLength": 500
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "membershipId",
+                      "reason"
+                    ],
+                    "additionalProperties": false
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/users/{id}/suspend": {
+      "post": {
+        "operationId": "suspendUser",
+        "summary": "Remove a member's access immediately",
+        "description": "Ends the person's sessions. The last active administrator and the caller themself cannot be suspended. Re-enabling needs an approved proposal.",
+        "tags": [
+          "Administration"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "description": "One key per logical action; reuse it when retrying after a lost response.",
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": true,
+            "description": "Resource version as a quoted string, e.g. \"3\". 428 if absent, 412 if stale.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "x-workspace": "corporate",
+        "x-required-permission": [
+          "admin.users.suspend"
+        ],
+        "x-session-only": true,
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {},
+                    "page": {
+                      "$ref": "#/components/schemas/Page"
+                    },
+                    "correlationId": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "correlationId"
+                  ]
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Problem details (RFC 9457) with a stable `code`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "reason": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 500
+                  }
+                },
+                "required": [
+                  "reason"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/local-inbox": {
+      "get": {
+        "operationId": "listLocalInbox",
+        "summary": "Sandbox-only local inbox with this corporate's invitation links",
+        "description": "No e-mail or SMS is ever sent by the sandbox. Used and expired links are not shown.",
+        "tags": [
+          "Administration"
+        ],
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "x-workspace": "corporate",
+        "x-required-permission": [
+          "admin.users.propose"
+        ],
+        "x-session-only": true,
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {},
+                    "page": {
+                      "$ref": "#/components/schemas/Page"
+                    },
+                    "correlationId": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "correlationId"
+                  ]
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Problem details (RFC 9457) with a stable `code`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/invitations/lookup": {
+      "post": {
+        "operationId": "lookupInvitation",
+        "summary": "Show who an invitation is for (token in the body, never in a URL)",
+        "description": "Unknown, used and expired tokens answer identically with 404.",
+        "tags": [
+          "Administration"
+        ],
+        "security": [],
+        "x-workspace": "public",
+        "x-required-permission": [],
+        "x-session-only": false,
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {},
+                    "page": {
+                      "$ref": "#/components/schemas/Page"
+                    },
+                    "correlationId": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "correlationId"
+                  ]
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Problem details (RFC 9457) with a stable `code`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "token": {
+                    "type": "string",
+                    "minLength": 20,
+                    "maxLength": 200
+                  }
+                },
+                "required": [
+                  "token"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        }
+      }
+    },
+    "/invitations/accept": {
+      "post": {
+        "operationId": "acceptInvitation",
+        "summary": "Accept an invitation once and receive the approved access",
+        "description": "Creates the identity if the e-mail is new. An invitation never changes the password of an existing identity.",
+        "tags": [
+          "Administration"
+        ],
+        "security": [],
+        "x-workspace": "public",
+        "x-required-permission": [],
+        "x-session-only": false,
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {},
+                    "page": {
+                      "$ref": "#/components/schemas/Page"
+                    },
+                    "correlationId": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "correlationId"
+                  ]
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Problem details (RFC 9457) with a stable `code`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "token": {
+                    "type": "string",
+                    "minLength": 20,
+                    "maxLength": 200
+                  },
+                  "password": {
+                    "type": "string",
+                    "minLength": 12,
+                    "maxLength": 128
+                  }
+                },
+                "required": [
+                  "token",
+                  "password"
+                ],
+                "additionalProperties": false
               }
             }
           }
