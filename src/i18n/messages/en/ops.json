@@ -1,1 +1,195 @@
-{}
+{
+  "queue": {
+    "title": "Payment operations",
+    "description": "Executions of your bank that need attention. Nothing here edits a ledger, a balance or a status: you can inquire and propose a safe repair.",
+    "unknown": "Result unknown",
+    "failed": "Failed before posting",
+    "overdue": "Overdue in flight",
+    "all": "All executions",
+    "attention": "Needs attention",
+    "empty": "No executions in this view.",
+    "execution": "Execution",
+    "state": "State",
+    "lastInquiry": "Last inquiry",
+    "never": "Never",
+    "open": "Open",
+    "masked": "Masked — payroll row",
+    "search": "Execution reference",
+    "filter": "Filter"
+  },
+  "detail": {
+    "title": "Execution",
+    "back": "Payment operations",
+    "instruction": "Instruction",
+    "corporate": "Corporate",
+    "attempt": "Attempt {number}",
+    "phase": "Phase when the answer was lost",
+    "inquiries": "Inquiries made",
+    "inquire": "Inquire with the core",
+    "inquireHelp": "Asks the simulated core about the ORIGINAL reference. If the posting exists it is acknowledged — never sent again.",
+    "inquiryOutcome": {
+      "BOOKED": "The core has the posting. It was acknowledged; no second debit.",
+      "NOT_FOUND": "The core has no posting under this reference. The execution stays unknown until a repair is approved.",
+      "UNAVAILABLE": "The core did not answer. Nothing was changed. Try again later.",
+      "NOT_UNKNOWN": "The outcome is already known."
+    },
+    "repairTitle": "Propose a repair",
+    "repairHelp": "A different person with the repair approval permission must approve. The repair inquires once more before it acts.",
+    "action": "Repair action",
+    "actions": {
+      "RESUBMIT_SAME_REFERENCE": "Resubmit with the same reference",
+      "MARK_FAILED_UNPOSTED": "Declare failed — not posted"
+    },
+    "actionHelp": {
+      "RESUBMIT_SAME_REFERENCE": "Sends the original instruction again under its original reference. If the first attempt arrives late, the core treats both as one posting.",
+      "MARK_FAILED_UNPOSTED": "Ends the execution as failed before posting, releases the reserved funds and the reserved limit. The corporate can then submit a new payment."
+    },
+    "reason": "Reason",
+    "evidence": "Evidence reference (optional)",
+    "propose": "Propose repair",
+    "blocked": {
+      "NOT_UNKNOWN": "A repair is only possible for an unknown outcome.",
+      "INQUIRE_FIRST": "Inquire first. A repair can be proposed only after the core answered that it has no posting.",
+      "CORE_HAS_POSTING": "The core has the posting, so no repair is needed.",
+      "OPEN_PROPOSAL": "A repair proposal is already awaiting a decision."
+    },
+    "proposals": "Repair proposals",
+    "noProposals": "No repair has been proposed.",
+    "proposedBy": "Proposed by {name}",
+    "openApproval": "Open the approval",
+    "history": "Recorded history",
+    "status": {
+      "PENDING_APPROVAL": "Awaiting approval",
+      "APPROVED": "Approved — being executed",
+      "REJECTED": "Rejected",
+      "EXECUTED": "Executed",
+      "FAILED": "Failed"
+    },
+    "result": "Result",
+    "results": {
+      "BOOKED": "Posting found and acknowledged",
+      "RESUBMITTED": "Sent again under the same reference",
+      "FAILED": "Ended as failed, not posted",
+      "NOT_UNKNOWN": "Already resolved",
+      "NOT_FOUND": "No posting found"
+    },
+    "noAccess": "Your role can view executions but not act on them."
+  },
+  "state": {
+    "INTENT": "Not started",
+    "HOLD_PLACED": "Funds reserved",
+    "RAIL_SUBMITTED": "Accepted by the rail",
+    "BOOKED": "Booked",
+    "FAILED": "Failed before posting",
+    "UNKNOWN": "Result unknown"
+  },
+  "history": {
+    "INQUIRY_BOOKED": "Inquiry: posting found",
+    "INQUIRY_NOT_FOUND": "Inquiry: no posting found",
+    "INQUIRY_UNAVAILABLE": "Inquiry: core did not answer",
+    "INSTRUCTION_PROCESSING": "Execution started",
+    "INSTRUCTION_SUBMITTED": "Accepted by the rail",
+    "INSTRUCTION_SETTLED": "Booked",
+    "INSTRUCTION_FAILED": "Failed before posting",
+    "INSTRUCTION_STATUS_UNKNOWN": "Outcome unknown",
+    "INSTRUCTION_RETURNED": "Returned"
+  },
+  "summary": {
+    "action": "Repair action",
+    "execution": "Execution reference",
+    "lastInquiry": "Last inquiry result",
+    "inquiries": "Inquiries made",
+    "evidence": "Evidence reference"
+  },
+  "recon": {
+    "title": "Reconciliation",
+    "description": "Compares what the platform expects with the simulated core's extract for one business date. A break is recorded, never corrected here.",
+    "start": "Start a run",
+    "businessDate": "Business date",
+    "startRun": "Start reconciliation",
+    "runs": "Runs",
+    "noRuns": "No reconciliation run yet.",
+    "expected": "Expected",
+    "inCore": "In core extract",
+    "matched": "Matched",
+    "breaks": "Breaks",
+    "openBreaks": "Open",
+    "runState": {
+      "RUNNING": "Running",
+      "COMPLETED": "Completed",
+      "FAILED": "Failed — core did not answer"
+    },
+    "runTitle": "Run for {date}",
+    "noBreaks": "No breaks: every expected posting matches the core extract.",
+    "kind": {
+      "MISSING_IN_CORE": "Missing in core",
+      "UNEXPECTED_IN_CORE": "Unexpected in core",
+      "DUPLICATE_IN_CORE": "Duplicate in core",
+      "AMOUNT_MISMATCH": "Amount mismatch",
+      "STATUS_MISMATCH": "Status mismatch"
+    },
+    "breakState": {
+      "OPEN": "Open",
+      "IN_REVIEW": "In review",
+      "RESOLVED": "Resolved"
+    },
+    "platform": "Platform expects",
+    "core": "Core reports",
+    "disposition": "Disposition",
+    "dispositions": {
+      "INVESTIGATING": "Investigating",
+      "EXPLAINED": "Explained — no correction needed",
+      "ESCALATED": "Escalated",
+      "CORRECTED_AT_SOURCE": "Corrected at source by the bank"
+    },
+    "record": "Record disposition",
+    "resolutionNote": "A disposition is added to the history. It never changes a ledger and cannot be edited or removed.",
+    "resolutionHistory": "Disposition history",
+    "refresh": "The run is still being prepared. Refresh in a moment."
+  },
+  "sim": {
+    "title": "Sandbox simulator",
+    "description": "Fixture controls for the SIMULATED core and rails. They exist only in the sandbox and never change a ledger or a balance.",
+    "clock": "Sandbox clock",
+    "clockNow": "Sandbox time now",
+    "clockOffset": "Ahead of real time by {minutes, plural, =0 {0 minutes} one {# minute} other {# minutes}}",
+    "clockNote": "Sandbox-wide. Time only moves forward, so no closed business window reopens.",
+    "advance": "Advance by (minutes)",
+    "advanceAction": "Advance clock",
+    "availability": "Availability",
+    "availabilityNote": "Sandbox-wide switches for the simulated systems.",
+    "target": {
+      "CORE": "Simulated core banking",
+      "LYPAY": "Simulated instant rail",
+      "ACH": "Simulated ACH clearing"
+    },
+    "online": "Online",
+    "offline": "Offline",
+    "setOffline": "Take offline",
+    "setOnline": "Bring online",
+    "faults": "Armed faults",
+    "faultsNote": "A one-off fault for an execution of your bank, used the next time that reference reaches the simulated core.",
+    "noFaults": "No fault is armed.",
+    "executionReference": "Execution reference",
+    "fault": "Fault",
+    "faultKind": {
+      "TIMEOUT_BEFORE_PROCESSING": "No answer — nothing posted",
+      "TIMEOUT_AFTER_BOOKING": "Posted, then the answer is lost",
+      "REJECT": "Rejected by the core"
+    },
+    "uses": "Uses left",
+    "arm": "Arm fault",
+    "remove": "Remove",
+    "overlays": "Reconciliation extract overlays",
+    "overlaysNote": "Make the core's extract differ from its ledger for one reference to demonstrate break detection. The ledger is not changed.",
+    "noOverlays": "No overlay.",
+    "overlayKind": {
+      "HIDE": "Hide from the extract",
+      "DUPLICATE": "Report twice",
+      "AMOUNT_OVERRIDE": "Report another amount"
+    },
+    "overlayAmount": "Reported amount (LYD)",
+    "addOverlay": "Add overlay",
+    "reason": "Reason"
+  }
+}

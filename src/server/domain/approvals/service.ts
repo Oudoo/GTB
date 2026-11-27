@@ -224,7 +224,9 @@ async function voteInTx(
   const locked = await tx.$queryRaw<Array<{ id: string }>>`SELECT "id" FROM "ApprovalRequest" WHERE "id" = ${requestId}::uuid FOR UPDATE`;
   if (locked.length === 0) throw notFound();
   const request = await tx.approvalRequest.findUniqueOrThrow({ where: { id: requestId } });
-  if (!inScope(ctx, request)) throw notFound();
+  // A proposal the caller could not list or open does not exist for them either when they
+  // guess its id: same answer as an unknown id, so nothing is revealed (SEC-01).
+  if (!isVisibleTo(ctx, request)) throw notFound();
 
   const existing = await tx.approvalVote.findUnique({
     where: { approvalRequestId_personId: { approvalRequestId: requestId, personId } },
@@ -429,6 +431,17 @@ function visibleClasses(ctx: AuthContext): ApprovalRequest["klass"][] {
     if (ctx.permissions.has("bank.deposits.read")) out.add("BRANCH_DEPOSIT");
   }
   return [...out];
+}
+
+/** The single-record form of `scopeWhere`: may this caller see this proposal at all? */
+function isVisibleTo(ctx: AuthContext, request: Pick<ApprovalRequest, "bankId" | "corporateId" | "klass" | "branchId" | "sourceAccountId">): boolean {
+  if (!inScope(ctx, request)) return false;
+  if (!visibleClasses(ctx).includes(request.klass)) return false;
+  if (ctx.workspace === "CORPORATE" && request.klass !== "CORPORATE_ADMIN") {
+    // Money proposals are visible only for accounts the caller may read.
+    return request.sourceAccountId !== null && rightsFor(ctx, request.sourceAccountId).read;
+  }
+  return true;
 }
 
 function scopeWhere(ctx: AuthContext): Prisma.ApprovalRequestWhereInput {

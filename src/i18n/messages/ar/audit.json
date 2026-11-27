@@ -45,7 +45,11 @@
     "beneficiary": "المستفيدون",
     "agreement": "الاتفاقية",
     "rail": "معايير القنوات",
-    "session": "الجلسات"
+    "session": "الجلسات",
+    "operations": "العمليات",
+    "repair": "المعالجات",
+    "recon": "المطابقة",
+    "simulator": "المحاكي"
   },
   "actions": {
     "payment": {
@@ -104,6 +108,42 @@
       "context": {
         "selected": "اختيار مساحة العمل"
       }
+    },
+    "operations": {
+      "inquiry": "استعلام العمليات من النظام المصرفي"
+    },
+    "repair": {
+      "proposed": "اقتراح معالجة",
+      "approved": "اعتماد معالجة",
+      "rejected": "رفض معالجة",
+      "executed": "تنفيذ معالجة"
+    },
+    "recon": {
+      "run": {
+        "started": "بدء مطابقة",
+        "completed": "اكتمال مطابقة"
+      },
+      "break": {
+        "disposition": "تسجيل تصرف في فرق مطابقة"
+      }
+    },
+    "simulator": {
+      "clock": {
+        "advanced": "تقديم ساعة البيئة التجريبية"
+      },
+      "availability": {
+        "changed": "تغيير توفر نظام محاكى"
+      },
+      "fault": {
+        "armed": "تجهيز عطل في المحاكي",
+        "removed": "إزالة عطل من المحاكي"
+      },
+      "recon": {
+        "overlay": {
+          "added": "إضافة تعديل على الكشف",
+          "removed": "إزالة تعديل من الكشف"
+        }
+      }
     }
   },
   "targets": {
@@ -114,7 +154,12 @@
     "agreementRestore": "استعادة اتفاقية",
     "railParameter": "معايير قناة",
     "membership": "مساحة عمل",
-    "corporate": "شركة"
+    "corporate": "شركة",
+    "executionAttempt": "عملية تنفيذ",
+    "reconciliationRun": "عملية مطابقة",
+    "reconciliationBreak": "فرق مطابقة",
+    "simulator": "المحاكي",
+    "repairProposal": "اقتراح معالجة"
   },
   "fields": {
     "before": "قبل",
@@ -147,6 +192,25 @@
     "agreementVersionNo": "نسخة الاتفاقية",
     "matchStatus": "التحقق من الاسم",
     "maskedReference": "الحساب",
-    "closeMatchAcknowledged": "إقرار التطابق التقريبي"
+    "closeMatchAcknowledged": "إقرار التطابق التقريبي",
+    "outcome": "النتيجة",
+    "executionReference": "مرجع التنفيذ",
+    "proposalId": "الاقتراح",
+    "action": "الإجراء",
+    "attemptState": "حالة التنفيذ",
+    "businessDate": "يوم العمل",
+    "expected": "المتوقع",
+    "core": "في النظام المصرفي",
+    "matched": "المتطابق",
+    "breaks": "الفروق",
+    "disposition": "التصرف",
+    "evidenceReference": "مرجع الإثبات",
+    "advanceMinutes": "الدقائق المقدَّمة",
+    "target": "النظام",
+    "offline": "متوقف",
+    "fault": "العطل",
+    "uses": "المرات",
+    "kind": "النوع",
+    "result": "النتيجة"
   }
 }

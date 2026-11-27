@@ -45,7 +45,11 @@
     "beneficiary": "Beneficiaries",
     "agreement": "Agreement",
     "rail": "Rail parameters",
-    "session": "Sessions"
+    "session": "Sessions",
+    "operations": "Operations",
+    "repair": "Repairs",
+    "recon": "Reconciliation",
+    "simulator": "Simulator"
   },
   "actions": {
     "payment": {
@@ -104,6 +108,42 @@
       "context": {
         "selected": "Workspace selected"
       }
+    },
+    "operations": {
+      "inquiry": "Operations inquiry with the core"
+    },
+    "repair": {
+      "proposed": "Repair proposed",
+      "approved": "Repair approved",
+      "rejected": "Repair rejected",
+      "executed": "Repair executed"
+    },
+    "recon": {
+      "run": {
+        "started": "Reconciliation run started",
+        "completed": "Reconciliation run completed"
+      },
+      "break": {
+        "disposition": "Reconciliation disposition recorded"
+      }
+    },
+    "simulator": {
+      "clock": {
+        "advanced": "Sandbox clock advanced"
+      },
+      "availability": {
+        "changed": "Simulated availability changed"
+      },
+      "fault": {
+        "armed": "Simulator fault armed",
+        "removed": "Simulator fault removed"
+      },
+      "recon": {
+        "overlay": {
+          "added": "Extract overlay added",
+          "removed": "Extract overlay removed"
+        }
+      }
     }
   },
   "targets": {
@@ -114,7 +154,12 @@
     "agreementRestore": "Agreement restore",
     "railParameter": "Rail parameter",
     "membership": "Workspace",
-    "corporate": "Corporate"
+    "corporate": "Corporate",
+    "executionAttempt": "Execution",
+    "reconciliationRun": "Reconciliation run",
+    "reconciliationBreak": "Reconciliation break",
+    "simulator": "Simulator",
+    "repairProposal": "Repair proposal"
   },
   "fields": {
     "before": "Before",
@@ -147,6 +192,25 @@
     "agreementVersionNo": "Agreement revision",
     "matchStatus": "Name check",
     "maskedReference": "Account",
-    "closeMatchAcknowledged": "Close match acknowledged"
+    "closeMatchAcknowledged": "Close match acknowledged",
+    "outcome": "Outcome",
+    "executionReference": "Execution reference",
+    "proposalId": "Proposal",
+    "action": "Action",
+    "attemptState": "Execution state",
+    "businessDate": "Business date",
+    "expected": "Expected",
+    "core": "In core",
+    "matched": "Matched",
+    "breaks": "Breaks",
+    "disposition": "Disposition",
+    "evidenceReference": "Evidence reference",
+    "advanceMinutes": "Minutes advanced",
+    "target": "System",
+    "offline": "Offline",
+    "fault": "Fault",
+    "uses": "Uses",
+    "kind": "Kind",
+    "result": "Result"
   }
 }

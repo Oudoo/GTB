@@ -7,7 +7,8 @@ import { formatDateTime } from "@/lib/format";
 import { auditQuerySchema, listAuditEvents, type AuditEventView, type AuditQuery } from "@/server/domain/audit/service";
 import { can, load, type WorkspacePage } from "@/server/page";
 
-const GROUPS = ["payment", "approval", "beneficiary", "agreement", "rail", "session"] as const;
+const CORPORATE_GROUPS = ["payment", "approval", "beneficiary", "agreement", "session"] as const;
+const BANK_GROUPS = ["payment", "approval", "agreement", "rail", "operations", "repair", "recon", "simulator", "session"] as const;
 const MINOR_KEY = /(^|\.)([A-Za-z]*Minor)$/;
 const DIGITS = /^(0|[1-9][0-9]{0,15})$/;
 
@@ -165,7 +166,7 @@ export async function AuditTrail({ page, basePath, searchParams }: { page: Works
             <Field id="action" label={t("audit.actionFilter")}>
               <Select {...describe("action", {})} name="action" defaultValue={query.action ?? ""}>
                 <option value="">{t("audit.anyAction")}</option>
-                {GROUPS.map((group) => (
+                {(bank ? BANK_GROUPS : CORPORATE_GROUPS).map((group) => (
                   <option key={group} value={`${group}.`}>{t(`audit.groups.${group}`)}</option>
                 ))}
               </Select>

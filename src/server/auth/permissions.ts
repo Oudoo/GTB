@@ -184,6 +184,8 @@ const ROLE_PERMISSIONS: Readonly<Record<RoleName, readonly Permission[]>> = {
     "bank.rail.read",
     "bank.governance.approve",
     "bank.repair.approve",
+    // A repair approver must be able to read the execution and its inquiry evidence.
+    "bank.operations.read",
     "bank.corporate.suspend",
   ],
   // Reads agreements and a corporate summary; no blanket transaction authority (document 01).

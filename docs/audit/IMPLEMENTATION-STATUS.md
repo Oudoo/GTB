@@ -15,10 +15,10 @@ Last executed on the working tree that became the commit recorded in `IMPLEMENTA
 |---|---|---|
 | Lint | `pnpm lint` | clean (0 errors, 0 warnings) |
 | Types | `pnpm typecheck` | clean |
-| Unit | `pnpm test:unit` | 69 passed / 69 |
-| Integration (real PostgreSQL 16) | `pnpm test:integration` | 7 passed / 7 |
+| Unit | `pnpm test:unit` | 94 passed / 94 |
+| Integration (real PostgreSQL 16) | `pnpm test:integration` | 16 passed / 16 |
 | Production build + worker bundle | `pnpm build` | succeeded |
-| End-to-end (production build, separate worker, own database) | `pnpm test:e2e` | 4 passed / 4 (E-01, E-02 × English desktop, Arabic 390 px emulation) |
+| End-to-end (production build, separate worker, own database) | `pnpm test:e2e` | 4 passed / 4 (E-01, E-02 × English desktop, Arabic 390 px emulation) — last run at commit `9dee03d`; not re-run since |
 
 `verified` below means the listed checks were executed and passed. `in-progress` means code exists
 but required tests from document 07 are still missing — those are listed, not implied.
@@ -105,8 +105,8 @@ but required tests from document 07 are still missing — those are listed, not 
 | Task | Status | Paths | Executed checks | Remaining gaps |
 |---|---|---|---|---|
 | OPS-101 report jobs and downloads | not-started | | | |
-| OPS-102 unknown/failed queue, inquiry, repair | not-started | | | |
-| OPS-103 reconciliation and breaks | not-started | | | |
+| OPS-102 unknown/failed queue, inquiry, repair | in-progress | `src/server/domain/operations/{service,register}.ts`, `src/app/[locale]/bank/operations/**` | `tests/integration/s8-operations.test.ts` (5): inquiry acknowledges a booked posting once; "not found" stays unknown; repair needs inquiry first and an independent approver; same-reference resubmission books once; a resolved execution cannot be repaired; bank isolation | E-04 journey through the UI not yet run |
+| OPS-103 reconciliation and breaks | in-progress | `src/server/domain/operations/{reconciliation,simulator}.ts`, `src/app/[locale]/bank/{reconciliation,simulator}/**` | `tests/integration/s8-reconciliation.test.ts` (4): I-43 five break kinds with unchanged ledger, append-only dispositions, visible failure when the core is offline, audited simulator switches | Deposit postings join the expected set with S7; UI journey not yet run |
 | OPS-104 alerts and audit search | not-started | | | |
 
 ## S9 — API product foundation

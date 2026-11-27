@@ -509,8 +509,8 @@ export class SimulatedCore implements CoreBankingPort {
       Array<{ executionReference: string; kind: string; currency: string; postedAt: Date; principal: bigint | null; fee: bigint | null }>
     >`
       SELECT j."executionReference", j."kind", min(e."currency") AS currency, j."postedAt",
-             sum(abs(e."signedMinor")) FILTER (WHERE a."kind" = 'CUSTOMER' AND e."component" = 'PRINCIPAL') AS principal,
-             sum(abs(e."signedMinor")) FILTER (WHERE a."kind" = 'CUSTOMER' AND e."component" = 'FEE') AS fee
+             (sum(abs(e."signedMinor")) FILTER (WHERE a."kind" = 'CUSTOMER' AND e."component" = 'PRINCIPAL'))::bigint AS principal,
+             (sum(abs(e."signedMinor")) FILTER (WHERE a."kind" = 'CUSTOMER' AND e."component" = 'FEE'))::bigint AS fee
         FROM "simcore"."SimCoreJournal" j
         JOIN "simcore"."SimCoreEntry" e ON e."journalId" = j."id"
         JOIN "simcore"."SimCoreAccount" a ON a."ref" = e."accountRef"
