@@ -28,24 +28,34 @@ read -r OWNER_USER OWNER_PASS APP_USER APP_PASS DB_NAME DB_HOST DB_PORT < <(
 )
 
 ADMIN_URL="$(node --env-file="$ENV_FILE" -e 'process.stdout.write(process.env.POSTGRES_ADMIN_URL ?? "")')"
+
+# run_psql <database> [psql arguments…] — as the superuser, on the given database.
 run_psql() {
+  local database="$1"
+  shift
   if [[ -n "$ADMIN_URL" ]]; then
-    psql "$ADMIN_URL" -v ON_ERROR_STOP=1 -q "$@"
+    # The database goes INTO the URL: a separate `-d` would replace the whole connection
+    # string and silently drop its host and password (psql would then try the local socket).
+    local url
+    url="$(node -e 'const u = new URL(process.argv[1]); u.pathname = "/" + encodeURIComponent(process.argv[2]); process.stdout.write(u.toString())' "$ADMIN_URL" "$database")"
+    psql "$url" -v ON_ERROR_STOP=1 -q "$@"
   elif [[ "$(id -u)" == "0" ]]; then
-    su postgres -c "psql -v ON_ERROR_STOP=1 -q -p $DB_PORT $(printf '%q ' "$@")"
+    su postgres -c "psql -v ON_ERROR_STOP=1 -q -p $DB_PORT -d $(printf '%q' "$database") $(printf '%q ' "$@")"
   else
-    sudo -u postgres psql -v ON_ERROR_STOP=1 -q -p "$DB_PORT" "$@"
+    sudo -u postgres psql -v ON_ERROR_STOP=1 -q -p "$DB_PORT" -d "$database" "$@"
   fi
 }
 
-if command -v pg_lsclusters >/dev/null 2>&1 && pg_lsclusters -h | grep -q " down "; then
+# Only a LOCAL cluster is started here. With POSTGRES_ADMIN_URL the server lives elsewhere
+# (Docker, CI service) and a stopped local installation is none of this script's business.
+if [[ -z "$ADMIN_URL" ]] && command -v pg_lsclusters >/dev/null 2>&1 && pg_lsclusters -h | grep -q " down "; then
   echo "Starting local PostgreSQL cluster…"
   CL=$(pg_lsclusters -h | awk '$4=="down"{print $1" "$2; exit}')
   # shellcheck disable=SC2086
   pg_ctlcluster $CL start || true
 fi
 
-run_psql -d postgres \
+run_psql postgres \
   -v owner="$OWNER_USER" -v owner_pass="$OWNER_PASS" \
   -v app="$APP_USER" -v app_pass="$APP_PASS" -v db="$DB_NAME" <<'SQL'
 SELECT format('CREATE ROLE %I LOGIN CREATEDB PASSWORD %L', :'owner', :'owner_pass')
@@ -59,6 +69,6 @@ SELECT format('CREATE DATABASE %I OWNER %I', :'db', :'owner')
 SQL
 
 # btree_gist backs the "no overlapping effective agreement versions" exclusion constraint.
-run_psql -d "$DB_NAME" -c 'CREATE EXTENSION IF NOT EXISTS btree_gist;'
+run_psql "$DB_NAME" -c 'CREATE EXTENSION IF NOT EXISTS btree_gist;'
 
 echo "PostgreSQL ready: database \"$DB_NAME\" on $DB_HOST:$DB_PORT (owner \"$OWNER_USER\", runtime \"$APP_USER\")."
