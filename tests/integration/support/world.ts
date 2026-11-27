@@ -15,6 +15,7 @@ import { makeDeps, type Deps, type RuntimeSettings } from "@/server/deps";
 import { drainJobs } from "@/server/jobs/runner";
 import { demoAgreementProposal } from "@/server/seed/demo";
 import { CORPORATES, PEOPLE, TEST_NOW, type CorporateKey } from "@/server/seed/fixtures";
+import { dropDatabase } from "./drop-database";
 
 export const ORIGIN = "http://localhost:3000";
 export const TEST_PASSWORD = "Synthetic-Test-Password-01";
@@ -32,6 +33,8 @@ export type ApiResult<T = unknown> = {
   body: { data?: T; page?: { nextCursor: string | null; hasMore: boolean }; correlationId?: string; code?: string; [key: string]: unknown };
   data: T;
   text: string;
+  /** The response exactly as sent (binary downloads such as PDF). */
+  bytes: Uint8Array;
 };
 
 export type RequestOptions = {
@@ -87,14 +90,15 @@ export class Actor {
       }
       this.cookie = [...jar.values()].join("; ");
     }
-    const text = await response.text();
+    const bytes = new Uint8Array(await response.arrayBuffer());
+    const text = new TextDecoder().decode(bytes);
     let parsed: ApiResult<T>["body"] = {};
     try {
       parsed = text ? (JSON.parse(text) as ApiResult<T>["body"]) : {};
     } catch {
       parsed = {};
     }
-    return { status: response.status, headers: response.headers, body: parsed, data: parsed.data as T, text };
+    return { status: response.status, headers: response.headers, body: parsed, data: parsed.data as T, text, bytes };
   }
 
   get<T = unknown>(path: string, options?: RequestOptions) {
@@ -184,7 +188,7 @@ export class World {
     const admin = new pg.Client({ connectionString: withDatabase(this.ownerUrl, "postgres") });
     await admin.connect();
     try {
-      await admin.query(`DROP DATABASE IF EXISTS "${this.name}" WITH (FORCE)`);
+      await dropDatabase(admin, this.name);
     } finally {
       await admin.end();
     }

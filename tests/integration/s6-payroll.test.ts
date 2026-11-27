@@ -1,16 +1,20 @@
 /**
  * S6 payroll (PYR-01, PYR-02, SEC-04; I-29, I-30, I-51): the officer sees employee detail; a
  * checker approves the aggregate without ever receiving a name, an account or a salary through
- * JSON, downloads, statements, audit, notifications, events or logs.
+ * JSON, downloads, statements, audit, notifications, events or logs — nor does an API token, a
+ * report file, a statement PDF or a webhook subscriber.
  */
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { formatMinor } from "@/contracts/money";
 import { businessDateOf } from "@/lib/calendar";
+import type { WebhookRequest, WebhookResponse, WebhookTransport } from "@/server/adapters/webhooks/transport";
+import { PdfBuilder } from "@/server/files/pdf";
 import { setLogSinkForTests } from "@/server/logging";
 import { ACCOUNTS, CORPORATES, EMPLOYEES_A, NEW_STAFF_A } from "@/server/seed/fixtures";
 import { accept, acceptSubmitApprove, employeesFile, getBatch, netMinorOf, payRow, payrollFile, rowsOf, submit, upload, uploadAndValidate, type BatchData, type PayRow } from "./support/batches";
 import { approve, coreBalance } from "./support/payments";
-import { createWorld, type World } from "./support/world";
+import { pdfText } from "./support/pdf-text";
+import { Actor, createWorld, type World } from "./support/world";
 
 const PAYROLL = ACCOUNTS.A_PAYROLL;
 const FEE = 100n; // LYD 0.100 per line (module 2.2 tariff of the demo agreement)
@@ -54,6 +58,31 @@ function secretsOf(rows: readonly PayRow[]): string[] {
   return [...secrets];
 }
 
+/** A subscriber's endpoint: keeps every request the application actually sent. */
+class Subscriber implements WebhookTransport {
+  readonly received: WebhookRequest[] = [];
+  async send(request: WebhookRequest): Promise<WebhookResponse> {
+    this.received.push(request);
+    return { status: 204, snippet: "" };
+  }
+}
+
+/**
+ * The same check for a PDF: its text is read back run by run. Words are drawn separately, so a
+ * name is looked for word by word ("Demo" and "Staff" alone identify nobody).
+ */
+function expectNoSecretInPdf(bytes: Uint8Array, secrets: readonly string[], where: string): string[] {
+  const { runs } = pdfText(bytes);
+  const generic = new Set(["Demo", "Staff"]);
+  for (const secret of secrets) {
+    for (const word of secret.split(" ").filter((part) => part.length > 0 && !generic.has(part))) {
+      const hit = runs.find((run) => run.includes(word));
+      if (hit !== undefined) throw new Error(`payroll detail leaked in ${where}: found "${word}" in "${hit}"`);
+    }
+  }
+  return runs;
+}
+
 function expectNoSecret(text: string, secrets: readonly string[], where: string): void {
   for (const secret of secrets) {
     if (text.includes(secret)) throw new Error(`payroll detail leaked in ${where}: found "${secret}"`);
@@ -62,14 +91,18 @@ function expectNoSecret(text: string, secrets: readonly string[], where: string)
 
 describe("S6 payroll", () => {
   let world: World;
+  const subscriber = new Subscriber();
   const logLines: string[] = [];
   const previousLevel = process.env["LOG_LEVEL"];
   beforeAll(async () => {
     // Capture what the application would really log (the suite is silent by default).
     process.env["LOG_LEVEL"] = "info";
     setLogSinkForTests((line) => logLines.push(line));
-    world = await createWorld();
+    world = await createWorld({ webhooks: { transport: subscriber, resolver: async (host) => (host === "hooks.example.test" ? [{ address: "93.184.216.34", family: 4 }] : []) } });
     await world.activateAgreement("A");
+    // An integration subscribed to every event type before any payroll is run.
+    const hook = await (await world.as("aAdmin")).post("/developer/webhooks", { url: "https://hooks.example.test/payroll-probe", events: ["payment.status_changed", "batch.finished", "deposit.posted", "limit.threshold_reached"] });
+    if (hook.status !== 201) throw new Error(`webhook registration failed: ${hook.status} ${hook.text}`);
   });
   afterAll(async () => {
     await world.close();
@@ -289,6 +322,154 @@ describe("S6 payroll", () => {
 
     // Nothing in the captured application log either (I-51).
     expectNoSecret(logLines.join("\n"), secrets, "application log");
+  });
+
+  it("keeps employee detail out of API tokens, report files, statement PDFs and webhook deliveries (PYR-02, SEC-04, API-01, RPT-01, EVT-01)", async () => {
+    const secrets = secretsOf([...accepted, ...badRows]);
+    const day = businessDateOf(world.clock.now(), "Africa/Tripoli");
+    const totalDebit = formatMinor(total + 9n * FEE, "LYD");
+    type Line = { kind: string; groupRef: string | null; itemCount: number; signedMinor: string };
+
+    // --- An API token holding every read scope and the payroll account -----------------------
+    const admin = await world.as("aAdmin");
+    const created = await admin.post<{ token: string }>("/developer/credentials", {
+      name: "Payroll leak probe (synthetic)",
+      scopes: ["accounts:read", "payments:read", "batches:read", "collections:read", "agreements:read", "webhooks:manage"],
+      accountIds: [PAYROLL.id, ACCOUNTS.A_OPERATING.id],
+      expiresInDays: 1,
+    });
+    expect(created.status).toBe(201);
+    const token = new Actor(world, "credential");
+    token.bearer = created.data.token;
+    // Payroll is not part of any token scope: the run, its rows and its files do not exist.
+    for (const path of [`/batches/${runId}`, `/batches/${runId}/rows`, `/batches/${runId}/rows?filter=ACCEPTED`, `/batches/${runId}/result`, `/batches/${runId}/errors`, "/batches?kind=PAYROLL", `/approvals/${approvalId}`, "/approvals", "/payroll/employees", "/templates/payroll", "/templates/employees", "/audit-events", "/notifications", "/reports", "/dashboard"]) {
+      const response = await token.get(path);
+      expect([401, 403, 404], `token GET ${path}`).toContain(response.status);
+      expectNoSecret(response.text, secrets, `token GET ${path}`);
+    }
+    const listed = await token.get<Array<{ kind: string; reference: string }>>("/batches?limit=100");
+    expect(listed.status).toBe(200);
+    expect(listed.data.filter((batch) => batch.kind === "PAYROLL" || batch.reference === runReference)).toEqual([]);
+    expectNoSecret(listed.text, [...secrets, runReference], "token GET /batches");
+    // What a token may read of the payroll account is the consolidated line.
+    const viaToken = await token.get<{ lines: Line[] }>(`/accounts/${PAYROLL.id}/statements?view=all&limit=100`);
+    expect(viaToken.status).toBe(200);
+    expect(viaToken.data.lines.filter((line) => line.groupRef === runReference)).toMatchObject([{ kind: "PAYROLL_RUN", itemCount: 9, signedMinor: `-${total + 9n * FEE}` }]);
+    expect(viaToken.data.lines.filter((line) => line.kind === "PAYMENT" || line.kind === "FEE")).toHaveLength(0);
+    expectNoSecret(viaToken.text, secrets, "token statement");
+    for (const path of ["/accounts", `/accounts/${PAYROLL.id}`, `/accounts/${PAYROLL.id}/balance`, "/payments?limit=100", "/beneficiaries", "/limits/usage", "/agreement", "/customers", "/deposits", "/developer/webhooks"]) {
+      const response = await token.get(path);
+      expect(response.status, `token GET ${path}`).toBe(200);
+      expectNoSecret(response.text, secrets, `token GET ${path}`);
+    }
+    // A token cannot upload payroll, add an employee or vote.
+    expect([401, 403, 404]).toContain((await token.post("/payroll/employees", { employeeCode: "EMP-778", name: "Not Allowed", accountScheme: "DEMO_DOMESTIC", accountReference: "DEMO-LY-910010" })).status);
+    expect([401, 403, 404]).toContain((await token.post(`/approvals/${approvalId}/approve`, { proposalVersion: 1, proposalHash: "0".repeat(64) }, { ifMatch: 1 })).status);
+
+    // --- Report files of the payroll account --------------------------------------------------
+    const finance = await world.as("aFinance");
+    const report = async (format: "CSV" | "PDF", locale: "en" | "ar") => {
+      const requested = await finance.post<{ id: string }>("/reports", { type: "STATEMENT", format, accountIds: [PAYROLL.id], fromDate: day, toDate: day, locale });
+      expect(requested.status).toBe(202);
+      await drainAll(world);
+      const file = await finance.get(`/reports/${requested.data.id}/download`);
+      expect(file.status).toBe(200);
+      return file;
+    };
+    const csv = await report("CSV", "en");
+    const csvLines = csv.text.trim().split("\r\n").filter((line) => line.includes(",PAYROLL_RUN,"));
+    expect(csvLines).toHaveLength(1);
+    expect(csvLines[0]).toContain(runReference);
+    expect(csvLines[0]).toContain(`-${totalDebit}`);
+    expect(csvLines[0]?.endsWith(",9")).toBe(true);
+    expectNoSecret(csv.text, secrets, "statement report CSV");
+
+    const statementLines = (await finance.get<{ lines: Line[] }>(`/accounts/${PAYROLL.id}/statements?view=all&limit=100&fromDate=${day}&toDate=${day}`)).data.lines.length;
+    expect(statementLines).toBeGreaterThanOrEqual(1);
+    expect(statementLines).toBeLessThan(9);
+    for (const locale of ["en", "ar"] as const) {
+      const pdf = await report("PDF", locale);
+      expect(pdf.headers.get("content-type")).toContain("application/pdf");
+      const runs = expectNoSecretInPdf(pdf.bytes, secrets, `statement report PDF (${locale})`);
+      // The reader really sees the document: its date, its stamp and the run total are there…
+      expect(runs).toContain(day);
+      expect(runs.some((run) => run.includes(totalDebit))).toBe(true);
+      // …once: the page has as many dated rows as the statement has lines (the period heading
+      // prints the date twice), not one per employee.
+      expect(runs.filter((run) => run === day)).toHaveLength(2 + statementLines);
+    }
+    // The reader used above does find a name when one is printed: the officer's own result file
+    // is a CSV, so the proof is a document built the same way that does carry one.
+    const control = new PdfBuilder({ locale: "ar", title: "control", simulatedStamp: "SIMULATED", meta: [] });
+    control.table([{ header: "A", width: 200 }, { header: "B", width: 100, align: "end", mono: true }], [[`${EMPLOYEES_A[0].name} ${EMPLOYEES_A[0].reference}`, `-${formatMinor(netMinorOf(november[0] as PayRow), "LYD")} LYD`]]);
+    expect(() => expectNoSecretInPdf(new Uint8Array(0), secrets, "empty")).toThrow(/not a PDF/);
+    const controlBytes = await control.finish();
+    expect(() => expectNoSecretInPdf(controlBytes, [EMPLOYEES_A[0].name], "control")).toThrow(/found "Amna"/);
+    expect(() => expectNoSecretInPdf(controlBytes, [EMPLOYEES_A[0].reference], "control")).toThrow(/DEMO-LY-910001/);
+    expect(() => expectNoSecretInPdf(controlBytes, [formatMinor(netMinorOf(november[0] as PayRow), "LYD")], "control")).toThrow(/leaked/);
+
+    // Everyone else: either no report at all, or the very same projection — in both formats.
+    const allowed: string[] = [];
+    for (const key of [...NON_OFFICERS, "aPayroll"]) {
+      const actor = await world.as(key);
+      for (const format of ["CSV", "PDF"] as const) {
+        const requested = await actor.post<{ id: string }>("/reports", { type: "STATEMENT", format, accountIds: [PAYROLL.id], fromDate: day, toDate: day });
+        if (requested.status !== 202) {
+          expect([403, 404], `${key} POST /reports`).toContain(requested.status);
+          continue;
+        }
+        allowed.push(`${key}:${format}`);
+        await drainAll(world);
+        const file = await actor.get(`/reports/${requested.data.id}/download`);
+        expect(file.status, `${key} report download`).toBe(200);
+        if (format === "CSV") {
+          expectNoSecret(file.text, secrets, `${key} statement report CSV`);
+          expect(file.text.split("\r\n").filter((line) => line.includes(",PAYROLL_RUN,"))).toHaveLength(1);
+        } else {
+          expectNoSecretInPdf(file.bytes, secrets, `${key} statement report PDF`);
+        }
+        // A file belongs to its requester: nobody else can fetch it, with or without report rights.
+        for (const otherKey of ["aChecker1", "aFinance", "aViewer"].filter((entry) => entry !== key)) {
+          const refused = await (await world.as(otherKey)).get(`/reports/${requested.data.id}/download`);
+          expect([403, 404], `${otherKey} fetching ${key}'s report`).toContain(refused.status);
+          expect(refused.headers.get("content-type") ?? "").not.toMatch(/csv|pdf/);
+        }
+      }
+    }
+    // The payroll officer holds no report right; a viewer does and is among those checked.
+    expect(allowed).toContain("aViewer:CSV");
+    expect(allowed).toContain("aViewer:PDF");
+    expect(allowed.filter((entry) => entry.startsWith("aPayroll"))).toEqual([]);
+
+    // --- What a webhook subscriber was actually sent ------------------------------------------
+    await drainAll(world);
+    type Sent = { id: string; type: string; corporateReference: string; data: Record<string, unknown> };
+    const sent = subscriber.received.map((request) => JSON.parse(request.body) as Sent);
+    const finished = sent.filter((event) => event.type === "batch.finished" && event.data["reference"] === runReference);
+    expect(finished.length).toBeGreaterThanOrEqual(1);
+    const last = finished[finished.length - 1] as Sent;
+    expect(last.data).toMatchObject({ resourceId: runId, kind: "PAYROLL", state: "COMPLETED" });
+    // Identifiers of the lines never leave: no event names a payroll line or its posting.
+    const lineIds = new Set<string>();
+    for (const row of await world.db.batchRow.findMany({ where: { batchId: runId }, select: { id: true } })) lineIds.add(row.id);
+    for (const instruction of await world.db.businessInstruction.findMany({ where: { batchId: runId }, select: { id: true } })) lineIds.add(instruction.id);
+    for (const attempt of await world.db.executionAttempt.findMany({ where: { instruction: { batchId: runId } }, select: { id: true, executionReference: true } })) {
+      lineIds.add(attempt.id);
+      lineIds.add(attempt.executionReference);
+    }
+    expect(lineIds.size).toBeGreaterThanOrEqual(9 * 3);
+    for (const request of subscriber.received) {
+      expectNoSecret(request.body, [...secrets, ...lineIds], "webhook delivery body");
+      expectNoSecret(JSON.stringify(request.headers), [...secrets, ...lineIds], "webhook delivery headers");
+      expectNoSecret(request.url.toString(), [...secrets, ...lineIds], "webhook delivery url");
+    }
+    expect(sent.filter((event) => event.type === "payment.status_changed")).toEqual([]);
+    const deliveries = await token.get(`/developer/webhooks`);
+    expectNoSecret(deliveries.text, [...secrets, ...lineIds], "webhook list through the token");
+    expectNoSecret(JSON.stringify(await world.db.webhookDelivery.findMany()), [...secrets, ...lineIds], "stored webhook deliveries");
+
+    // Nothing of the above reached the log either.
+    expectNoSecret(logLines.join("\n"), secrets, "application log after reports and deliveries");
   });
 
   it("blocks the same salary in another file and keeps detail out of error paths and logs (I-29, I-51)", async () => {

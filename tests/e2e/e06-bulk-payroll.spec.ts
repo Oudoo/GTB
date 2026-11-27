@@ -180,4 +180,17 @@ test("E-07 payroll: the officer sees employee detail, the checker approves total
   expect(lines).toHaveLength(1);
   expect(lines[0]).toMatchObject({ kind: "PAYROLL_RUN", itemCount: 3, signedMinor: "-3000300" });
   expect(JSON.stringify(statement.body)).not.toContain("Demo Staff");
+
+  // After settlement too: every page the checker can open shows the run as a total, never a
+  // name, an employee code, an account or one person's pay (with or without its fee).
+  for (const route of [`/payroll/${runId}`, "/payroll", `/accounts/${payrollAccount.id}`, "/accounts", "/dashboard", "/notifications", "/approvals", `/approvals/${approvalId}`, "/audit", "/limits"]) {
+    await checker.goto(path(route));
+    await expect(checker.locator("main").first()).toBeVisible();
+    await leaked(`${route} after settlement`);
+    expect(await checker.content(), `${route} must not show a single salary`).not.toMatch(/data-money="-?1000[01]00"/);
+  }
+  await checker.goto(path(`/accounts/${payrollAccount.id}`));
+  await expect(checker.getByTestId("payroll-line").filter({ visible: true }).first()).toBeVisible();
+  await expect(checker.locator('[data-signed-minor="-3000300"]').filter({ visible: true }).first()).toBeVisible();
+  for (const single of ["-1000000", "-1000100", "-100"]) await expect(checker.locator(`[data-signed-minor="${single}"]`)).toHaveCount(0);
 });

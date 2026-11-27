@@ -9,6 +9,7 @@
  */
 import { existsSync } from "node:fs";
 import pg from "pg";
+import { dropDatabase } from "./drop-database";
 
 const TEST_PASSWORD = "Synthetic-Test-Password-01";
 
@@ -85,7 +86,7 @@ export default async function globalSetup(): Promise<() => Promise<void>> {
         [template, `${prefix}%`],
       );
       for (const row of rows) {
-        await cleanup.query(`DROP DATABASE IF EXISTS "${row.datname}" WITH (FORCE)`);
+        await dropDatabase(cleanup, row.datname);
       }
     } finally {
       await cleanup.end();
