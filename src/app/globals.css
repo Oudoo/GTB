@@ -1,0 +1,105 @@
+@import "tailwindcss";
+
+/*
+ * Al Qarib | Corporate Banking — restrained banking palette (document 05).
+ * Contrast on the light canvas (WCAG 2.2 AA, 4.5:1 for body text):
+ *   ink   #15253B on #FFFFFF = 15.6:1     muted #53647A on #FFFFFF = 6.1:1
+ *   accent #006D77 on #FFFFFF = 6.1:1     white on nav #10233F    = 15.9:1
+ */
+@theme {
+  --color-canvas: #f5f7fa;
+  --color-surface: #ffffff;
+  --color-ink: #15253b;
+  --color-muted: #53647a;
+  --color-nav: #10233f;
+  --color-nav-soft: #1b3559;
+  --color-accent: #006d77;
+  --color-accent-strong: #00545c;
+  --color-accent-soft: #e2f1f2;
+  --color-border: #d7dfe8;
+  --color-border-strong: #b6c2d0;
+  --color-danger: #b42318;
+  --color-danger-soft: #fdecea;
+  --color-warning: #8a5300;
+  --color-warning-soft: #fff4dd;
+  --color-success: #17663a;
+  --color-success-soft: #e4f4ea;
+  --color-info: #1d4f91;
+  --color-info-soft: #e6eefa;
+  --color-sandbox: #6b3fa0;
+  --color-sandbox-soft: #f1eafa;
+
+  --font-sans: var(--font-inter), var(--font-arabic), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --radius-card: 10px;
+  --shadow-card: 0 1px 2px rgb(16 35 63 / 0.06);
+}
+
+@layer base {
+  html {
+    color-scheme: light;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
+  html[lang="ar"] {
+    --font-sans: var(--font-arabic), var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  }
+
+  body {
+    background: var(--color-canvas);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-size: 15px;
+    line-height: 1.5;
+    min-height: 100vh;
+    min-height: 100dvh;
+  }
+
+  /* Always-visible keyboard focus (document 05). */
+  :focus-visible {
+    outline: 3px solid var(--color-accent);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+
+  /* Money and identifiers: tabular numerals, never reversed inside RTL text. */
+  .tabular {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum" 1;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+@layer utilities {
+  /* Installed-PWA safe areas (MOB-02). */
+  .pt-safe {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  .mb-safe-nav {
+    margin-bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+  }
+  .min-touch {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}

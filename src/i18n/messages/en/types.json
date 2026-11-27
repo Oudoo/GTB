@@ -1,0 +1,146 @@
+{
+  "transactionType": {
+    "INSTANT_ACCOUNT_CREDIT": "Instant transfer",
+    "ACH_CREDIT": "ACH credit transfer",
+    "OWN_ACCOUNT_TRANSFER": "Own-account transfer",
+    "BULK_CREDIT": "Bulk transfer",
+    "PAYROLL_SALARY": "Payroll — salary",
+    "PAYROLL_ALLOWANCE": "Payroll — allowance",
+    "BRANCH_CASH_DEPOSIT": "Branch cash deposit",
+    "BRANCH_CHEQUE_DEPOSIT": "Branch cheque deposit"
+  },
+  "rail": {
+    "LYPAY": "Instant rail (simulated)",
+    "ACH": "ACH clearing (simulated)",
+    "INTERNAL": "Internal posting",
+    "BRANCH": "Branch"
+  },
+  "railHelp": {
+    "LYPAY": "Simulated instant rail. Not connected to the real LYPay system.",
+    "ACH": "Simulated clearing with a cut-off time and closed days. Not connected to the real ACH system.",
+    "INTERNAL": "Booked between your own accounts in the simulated core.",
+    "BRANCH": "Captured at a simulated branch counter."
+  },
+  "accountKind": {
+    "OPERATING": "Operating",
+    "PAYROLL": "Payroll",
+    "SAVINGS": "Savings",
+    "COLLECTION": "Collection"
+  },
+  "segment": {
+    "LARGE": "Large corporate",
+    "MEDIUM": "Medium corporate",
+    "SMALL": "Small corporate"
+  },
+  "provenance": {
+    "DEMO_UNCONFIRMED": "Demo value — unconfirmed",
+    "BANK_CONFIRMED": "Bank confirmed"
+  },
+  "limitLevel": {
+    "rail": "Rail ceiling",
+    "type": "Transaction type",
+    "module": "Service",
+    "corporate": "Whole company",
+    "user": "You"
+  },
+  "limitLevelUpper": {
+    "TYPE": "Transaction type",
+    "MODULE": "Service",
+    "CORPORATE": "Whole company",
+    "USER": "Your own limit"
+  },
+  "period": {
+    "ITEM": "per item",
+    "DAY": "per business day",
+    "MONTH": "per calendar month",
+    "BATCH": "per batch"
+  },
+  "metric": {
+    "AMOUNT": "Amount",
+    "ITEMS": "Items"
+  },
+  "approvalClass": {
+    "PAYMENT": "Payment",
+    "BULK": "Bulk transfer",
+    "PAYROLL": "Payroll run",
+    "CORPORATE_ADMIN": "Access change",
+    "BANK_GOVERNANCE": "Bank governance",
+    "BANK_REPAIR": "Operations repair",
+    "BRANCH_DEPOSIT": "Branch deposit"
+  },
+  "eligibility": {
+    "OK": "You can decide this proposal.",
+    "OWN_PROPOSAL": "You created this proposal, so another person must decide it.",
+    "NO_PERMISSION": "Your role does not include approving this kind of proposal.",
+    "NO_ACCOUNT_RIGHT": "You do not have approval rights on this account.",
+    "NOT_PERSON": "Only a signed-in person can approve.",
+    "WRONG_BRANCH": "This item belongs to another branch."
+  },
+  "windowReason": {
+    "BEFORE_OPEN": "The rail has not opened yet today.",
+    "AFTER_CUTOFF": "Today's cut-off has passed.",
+    "CLOSED_DAY": "The rail is closed on that day.",
+    "CORE_OFFLINE": "The banking system is in its offline window."
+  },
+  "timeline": {
+    "PAYMENT_CREATED": "Draft created",
+    "PAYMENT_SENT_FOR_APPROVAL": "Submitted for approval",
+    "PAYMENT_APPROVED": "Approved",
+    "PAYMENT_QUEUED": "Queued for execution — limit reserved",
+    "PAYMENT_SCHEDULED": "Scheduled for its execution date",
+    "PAYMENT_PROCESSING": "Processing started — funds reserved",
+    "PAYMENT_SUBMITTED": "Accepted by the payment rail",
+    "PAYMENT_SETTLED": "Settled — booked in the banking system",
+    "PAYMENT_FAILED": "Failed before posting — nothing debited",
+    "PAYMENT_STATUS_UNKNOWN": "No confirmation received — result being checked",
+    "PAYMENT_RETURNED": "Returned — compensating entry booked",
+    "PAYMENT_REJECTED": "Rejected by a checker",
+    "PAYMENT_CANCELLED": "Cancelled",
+    "PAYMENT_EXPIRED": "Approval period ended without a decision",
+    "PAYMENT_REVISED": "New revision created — previous approvals void",
+    "REAPPROVAL_REQUIRED": "Terms changed — approval required again",
+    "RELEASE_BLOCKED": "Release blocked by a control",
+    "RELEASE_RETRY_REQUESTED": "Release requested again",
+    "UNKNOWN": "Status update",
+    "BATCH_UPLOADED": "File uploaded",
+    "BATCH_VALIDATED": "Rows validated",
+    "BATCH_VALIDATION_FAILED": "Validation failed — nothing can be submitted",
+    "BATCH_ROWS_ACCEPTED": "Rows to pay confirmed",
+    "BATCH_REVISED": "Row set changed — previous approvals void",
+    "BATCH_SENT_FOR_APPROVAL": "Submitted for approval",
+    "BATCH_APPROVED": "Approved",
+    "BATCH_PROCESSING": "Payments started — limits reserved",
+    "BATCH_COMPLETED": "Completed — every row settled",
+    "BATCH_PARTIALLY_COMPLETED": "Finished — some rows did not settle",
+    "BATCH_FAILED": "Failed — no row was paid",
+    "BATCH_REJECTED": "Rejected by a checker",
+    "BATCH_EXPIRED": "Approval period ended without a decision",
+    "BATCH_CANCELLED": "Cancelled",
+    "BATCH_RETRY_CREATED": "Retry batch created from failed rows",
+    "DEPOSIT_CAPTURED": "Deposit captured at the branch",
+    "DEPOSIT_MANAGER_APPROVED": "Approved by a branch manager",
+    "DEPOSIT_MANAGER_REJECTED": "Rejected by a branch manager",
+    "DEPOSIT_EXPIRED": "Approval period ended without a decision",
+    "DEPOSIT_POSTED": "Posted — credited in the banking system",
+    "DEPOSIT_STATUS_UNKNOWN": "No confirmation received — result being checked",
+    "DEPOSIT_INQUIRY_NOT_FOUND": "Not found in the banking system — sent again under the same reference",
+    "DEPOSIT_POSTING_REJECTED": "The banking system rejected the posting — nothing credited",
+    "DEPOSIT_CHEQUE_CLEARED": "Cheque cleared",
+    "DEPOSIT_CHEQUE_RETURNED": "Cheque returned — nothing credited"
+  },
+  "failure": {
+    "INSUFFICIENT_FUNDS": "The available balance was not enough for the amount and fee.",
+    "BENEFICIARY_ACCOUNT_BLOCKED": "The receiving account is blocked.",
+    "BENEFICIARY_ACCOUNT_NOT_FOUND": "The receiving account was not found.",
+    "RAIL_REJECTED": "The payment rail rejected the instruction.",
+    "ACCOUNT_BLOCKED": "The source account is blocked.",
+    "ACCOUNT_NOT_FOUND": "The source account was not found in the banking system.",
+    "CORE_REJECTED": "The banking system rejected the posting.",
+    "DECLARED_UNPOSTED": "Bank operations confirmed that nothing was posted.",
+    "BENEFICIARY_RETURNED": "The receiving side returned the payment.",
+    "RETURNED": "The payment was returned.",
+    "MAKER_INELIGIBLE": "The person who created this payment no longer has the required access.",
+    "REAPPROVAL_REQUIRED": "The fee or approval requirement changed. It must be approved again.",
+    "OTHER": "The instruction could not be executed."
+  }
+}

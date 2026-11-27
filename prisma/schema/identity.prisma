@@ -1,0 +1,340 @@
+// Identity, tenancy and access (SEC-01..03, ADM-01).
+
+enum CorporateStatus {
+  ACTIVE
+  SUSPENDED
+  CLOSED
+
+  @@schema("public")
+}
+
+enum PersonStatus {
+  ACTIVE
+  SUSPENDED
+
+  @@schema("public")
+}
+
+enum MembershipKind {
+  CORPORATE
+  BANK
+
+  @@schema("public")
+}
+
+enum MembershipStatus {
+  ACTIVE
+  SUSPENDED
+  INVITED
+
+  @@schema("public")
+}
+
+enum Role {
+  // corporate side
+  CORPORATE_ADMIN
+  MAKER
+  CHECKER
+  TREASURER
+  FINANCE
+  PAYROLL_OFFICER
+  VIEWER
+  API_INTEGRATOR
+  // bank side
+  BANK_ADMIN_MAKER
+  BANK_ADMIN_CHECKER
+  RELATIONSHIP_MANAGER
+  BRANCH_TELLER
+  BRANCH_MANAGER
+  PAYMENTS_OPERATIONS
+  COMPLIANCE
+  PAYROLL_SUPPORT
+
+  @@schema("public")
+}
+
+enum AccountKind {
+  OPERATING
+  PAYROLL
+  SAVINGS
+  COLLECTION
+
+  @@schema("public")
+}
+
+enum AccountStatus {
+  ACTIVE
+  FROZEN
+  CLOSED
+
+  @@schema("public")
+}
+
+model Bank {
+  id               String   @id @default(uuid(7)) @db.Uuid
+  code             String   @unique
+  name             String
+  nameAr           String
+  businessTimezone String
+  baseCurrency     String
+  sandbox          Boolean  @default(true)
+  createdAt        DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt        DateTime @updatedAt @db.Timestamptz(6)
+  version          Int      @default(1)
+
+  branches    Branch[]
+  corporates  Corporate[]
+  memberships Membership[]
+  calendars   BankCalendar[]
+
+  @@schema("public")
+}
+
+model Branch {
+  id             String   @id @default(uuid(7)) @db.Uuid
+  bankId         String   @db.Uuid
+  code           String
+  name           String
+  nameAr         String
+  cashAccountRef String
+  active         Boolean  @default(true)
+  createdAt      DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt      DateTime @updatedAt @db.Timestamptz(6)
+
+  bank        Bank         @relation(fields: [bankId], references: [id])
+  memberships Membership[]
+  deposits    Deposit[]
+
+  @@unique([bankId, code])
+  @@unique([id, bankId])
+  @@schema("public")
+}
+
+model Corporate {
+  id              String          @id @default(uuid(7)) @db.Uuid
+  bankId          String          @db.Uuid
+  legalName       String
+  legalNameAr     String
+  shortCode       String
+  segment         Segment
+  status          CorporateStatus @default(ACTIVE)
+  coreCustomerRef String
+  createdAt       DateTime        @default(now()) @db.Timestamptz(6)
+  updatedAt       DateTime        @updatedAt @db.Timestamptz(6)
+  version         Int             @default(1)
+
+  bank        Bank         @relation(fields: [bankId], references: [id])
+  memberships Membership[]
+  accounts    Account[]
+  agreement   Agreement?
+
+  @@unique([bankId, shortCode])
+  @@unique([id, bankId])
+  @@schema("public")
+}
+
+/// A human identity. This is also the authentication library's "user" table.
+model Person {
+  id              String       @id @default(uuid(7)) @db.Uuid
+  email           String       @unique
+  name            String
+  nameAr          String?
+  emailVerified   Boolean      @default(false)
+  image           String?
+  status          PersonStatus @default(ACTIVE)
+  preferredLocale String       @default("en")
+  isDemo          Boolean      @default(false)
+  createdAt       DateTime     @default(now()) @db.Timestamptz(6)
+  updatedAt       DateTime     @updatedAt @db.Timestamptz(6)
+
+  sessions    AuthSession[]
+  accounts    AuthAccount[]
+  memberships Membership[]
+  votes       ApprovalVote[]
+
+  @@schema("public")
+}
+
+/// Database-backed, revocable session (deleting the row revokes it immediately).
+model AuthSession {
+  id                 String   @id @default(uuid(7)) @db.Uuid
+  token              String   @unique
+  expiresAt          DateTime @db.Timestamptz(6)
+  ipAddress          String?
+  userAgent          String?
+  userId             String   @db.Uuid
+  activeMembershipId String?  @db.Uuid
+  createdAt          DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt          DateTime @updatedAt @db.Timestamptz(6)
+
+  user Person @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@schema("public")
+}
+
+model AuthAccount {
+  id                    String    @id @default(uuid(7)) @db.Uuid
+  accountId             String
+  providerId            String
+  userId                String    @db.Uuid
+  password              String?
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime? @db.Timestamptz(6)
+  refreshTokenExpiresAt DateTime? @db.Timestamptz(6)
+  scope                 String?
+  createdAt             DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt             DateTime  @updatedAt @db.Timestamptz(6)
+
+  user Person @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([providerId, accountId])
+  @@index([userId])
+  @@schema("public")
+}
+
+model AuthVerification {
+  id         String   @id @default(uuid(7)) @db.Uuid
+  identifier String
+  value      String
+  expiresAt  DateTime @db.Timestamptz(6)
+  createdAt  DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt  DateTime @updatedAt @db.Timestamptz(6)
+
+  @@index([identifier])
+  @@schema("public")
+}
+
+/// Authentication-endpoint rate limiting (database backed so it survives restarts).
+model AuthRateLimit {
+  id          String @id @default(uuid(7)) @db.Uuid
+  key         String @unique
+  count       Int
+  lastRequest BigInt
+
+  @@schema("public")
+}
+
+/// Login throttle keyed by a hash of the normalized identifier (no user enumeration).
+model LoginThrottle {
+  keyHash     String    @id
+  failures    Int       @default(0)
+  windowStart DateTime  @db.Timestamptz(6)
+  lockedUntil DateTime? @db.Timestamptz(6)
+  updatedAt   DateTime  @updatedAt @db.Timestamptz(6)
+
+  @@schema("public")
+}
+
+model Membership {
+  id                    String           @id @default(uuid(7)) @db.Uuid
+  personId              String           @db.Uuid
+  bankId                String           @db.Uuid
+  corporateId           String?          @db.Uuid
+  kind                  MembershipKind
+  /// "C:<corporateId>" or "B:<bankId>"; gives one membership per person and context.
+  scopeKey              String
+  roles                 Role[]
+  status                MembershipStatus @default(ACTIVE)
+  branchId              String?          @db.Uuid
+  /// Corporate user limits (LIM-01 level 4). NULL means "no user allowance" for money movement.
+  userPerItemLimitMinor BigInt?
+  userDailyLimitMinor   BigInt?
+  limitCurrency         String?
+  grantVersion          Int              @default(1)
+  suspendedAt           DateTime?        @db.Timestamptz(6)
+  createdAt             DateTime         @default(now()) @db.Timestamptz(6)
+  updatedAt             DateTime         @updatedAt @db.Timestamptz(6)
+  version               Int              @default(1)
+
+  person    Person         @relation(fields: [personId], references: [id])
+  bank      Bank           @relation(fields: [bankId], references: [id])
+  corporate Corporate?     @relation(fields: [corporateId], references: [id])
+  branch    Branch?        @relation(fields: [branchId], references: [id])
+  grants    AccountGrant[]
+
+  @@unique([personId, scopeKey])
+  @@unique([id, corporateId])
+  @@index([corporateId])
+  @@index([bankId, kind])
+  @@schema("public")
+}
+
+model Account {
+  id            String        @id @default(uuid(7)) @db.Uuid
+  bankId        String        @db.Uuid
+  corporateId   String        @db.Uuid
+  coreAccountRef String       @unique
+  name          String
+  nameAr        String
+  maskedNumber  String
+  currency      String
+  kind          AccountKind
+  status        AccountStatus @default(ACTIVE)
+  createdAt     DateTime      @default(now()) @db.Timestamptz(6)
+  updatedAt     DateTime      @updatedAt @db.Timestamptz(6)
+  version       Int           @default(1)
+
+  corporate        Corporate      @relation(fields: [corporateId], references: [id])
+  grants           AccountGrant[]
+  paymentsAsSource Payment[]      @relation("PaymentSource")
+  batchesAsSource  Batch[]        @relation("BatchSource")
+  depositsCredited Deposit[]      @relation("DepositCredit")
+
+  @@unique([id, corporateId])
+  @@index([corporateId])
+  @@schema("public")
+}
+
+/// Per-account rights. The composite foreign keys make a cross-corporate grant impossible.
+model AccountGrant {
+  id           String   @id @default(uuid(7)) @db.Uuid
+  membershipId String   @db.Uuid
+  corporateId  String   @db.Uuid
+  accountId    String   @db.Uuid
+  canRead      Boolean  @default(true)
+  canDebit     Boolean  @default(false)
+  canApprove   Boolean  @default(false)
+  canReport    Boolean  @default(false)
+  createdAt    DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt    DateTime @updatedAt @db.Timestamptz(6)
+
+  membership Membership @relation(fields: [membershipId, corporateId], references: [id, corporateId], onDelete: Cascade)
+  account    Account    @relation(fields: [accountId, corporateId], references: [id, corporateId])
+
+  @@unique([membershipId, accountId])
+  @@index([accountId])
+  @@schema("public")
+}
+
+/// Hashed, single-use, expiring invitation (ADM-01). The raw token is never stored here.
+model Invitation {
+  id                   String    @id @default(uuid(7)) @db.Uuid
+  bankId               String    @db.Uuid
+  corporateId          String    @db.Uuid
+  email                String
+  displayName          String
+  tokenHash            String    @unique
+  userChangeProposalId String    @unique @db.Uuid
+  expiresAt            DateTime  @db.Timestamptz(6)
+  usedAt               DateTime? @db.Timestamptz(6)
+  createdAt            DateTime  @default(now()) @db.Timestamptz(6)
+
+  @@index([corporateId])
+  @@schema("public")
+}
+
+/// Sandbox-only local inbox: no external e-mail/SMS is ever sent (document 11).
+model LocalInboxMessage {
+  id        String   @id @default(uuid(7)) @db.Uuid
+  toEmail   String
+  kind      String
+  /// Contains the one-time invitation link for local evaluation only.
+  body      String
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+
+  @@index([toEmail, createdAt])
+  @@schema("public")
+}

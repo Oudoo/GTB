@@ -1,0 +1,60 @@
+{
+  "title": "Reports",
+  "description": "Request a statement or a deposit summary as a file. Files are prepared in the background and can be downloaded only by you while you keep report access.",
+  "requestTitle": "Request a report",
+  "type": "Report",
+  "types": {
+    "STATEMENT": "Account statement",
+    "DEPOSIT_SUMMARY": "Deposit summary"
+  },
+  "format": "Format",
+  "formats": {
+    "CSV": "CSV (spreadsheet)",
+    "PDF": "PDF"
+  },
+  "accounts": "Accounts",
+  "from": "From",
+  "to": "To",
+  "language": "Language of the file",
+  "languages": {
+    "en": "English",
+    "ar": "Arabic"
+  },
+  "request": "Request report",
+  "noAccounts": "You have no account you can export.",
+  "chooseAccount": "Choose at least one account.",
+  "csvOnly": "The deposit summary is available as CSV.",
+  "payrollNote": "A payroll run appears as one total line. Employee details are never included in a statement file.",
+  "listTitle": "Your reports",
+  "caption": "Reports",
+  "period": "Period",
+  "state": "Status",
+  "rows": "Lines",
+  "requested": "Requested",
+  "download": "Download",
+  "empty": "You have not requested a report yet",
+  "preparing": "Preparing…",
+  "failed": "Could not be prepared",
+  "failedDenied": "You no longer have access to these accounts",
+  "expired": "Expired — request it again",
+  "file": {
+    "statementTitle": "Account statement",
+    "generated": "Generated {time} (bank time)",
+    "footer": "Sandbox document with synthetic data — not an official bank statement.",
+    "noLines": "No activity in this period.",
+    "date": "Date",
+    "kind": "Type",
+    "description": "Description",
+    "amount": "Amount",
+    "kinds": {
+      "PAYMENT": "Payment",
+      "FEE": "Fee",
+      "PAYROLL_RUN": "Payroll run (total)",
+      "TRANSFER": "Transfer",
+      "DEPOSIT": "Deposit",
+      "RETURN": "Return",
+      "OPENING_BALANCE": "Opening balance",
+      "OTHER": "Other"
+    }
+  }
+}

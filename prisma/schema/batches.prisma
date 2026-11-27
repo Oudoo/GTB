@@ -1,0 +1,236 @@
+// Shared bulk/payroll batch engine and restricted payroll storage (BAT-01..04, PYR-01..02, SEC-04).
+
+enum BatchKind {
+  BULK
+  PAYROLL
+
+  @@schema("public")
+}
+
+enum BatchState {
+  DRAFT
+  VALIDATING
+  READY
+  PENDING_APPROVAL
+  APPROVED
+  SCHEDULED
+  PROCESSING
+  COMPLETED
+  PARTIALLY_COMPLETED
+  FAILED
+  REJECTED
+  CANCELLED
+
+  @@schema("public")
+}
+
+enum FileFormat {
+  CSV
+  XLSX
+
+  @@schema("public")
+}
+
+enum RowValidationState {
+  VALID
+  INVALID
+  DUPLICATE
+
+  @@schema("public")
+}
+
+enum RowExecutionState {
+  NONE
+  PENDING
+  PROCESSING
+  SUBMITTED
+  SETTLED
+  FAILED
+  STATUS_UNKNOWN
+  RETURNED
+  CANCELLED
+
+  @@schema("public")
+}
+
+enum PayrollComponent {
+  SALARY
+  ALLOWANCE
+
+  @@schema("public")
+}
+
+model Batch {
+  id                   String           @id @default(uuid(7)) @db.Uuid
+  bankId               String           @db.Uuid
+  corporateId          String           @db.Uuid
+  kind                 BatchKind
+  reference            String
+  moduleId             String
+  sourceAccountId      String           @db.Uuid
+  currency             String
+  rail                 Rail
+  executionMode        ExecutionMode
+  executeAt            DateTime?        @db.Timestamptz(6)
+  state                BatchState       @default(VALIDATING)
+  /// Bumped on every validation / accepted-set change; votes bind to `revision` + hash.
+  validationVersion    Int              @default(1)
+  revision             Int              @default(1)
+  fileName             String
+  fileSha256           String
+  fileSizeBytes        Int
+  fileFormat           FileFormat
+  storageKey           String?
+  templateVersion      Int
+  payPeriod            String?
+  isCorrection         Boolean          @default(false)
+  totalRows            Int              @default(0)
+  validRows            Int              @default(0)
+  invalidRows          Int              @default(0)
+  duplicateRows        Int              @default(0)
+  warningRows          Int              @default(0)
+  acceptedCount        Int              @default(0)
+  acceptedTotalMinor   BigInt           @default(0)
+  feePerItemMinor      BigInt?
+  feeTotalMinor        BigInt           @default(0)
+  acceptedRowsHash     String?
+  warningsAcknowledged Boolean          @default(false)
+  identicalToBatchId   String?          @db.Uuid
+  parentBatchId        String?          @db.Uuid
+  validationErrorCode  String?
+  releaseBlockCode     String?
+  agreementVersionId   String?          @db.Uuid
+  policySnapshot       Json?
+  approvalRequestId    String?          @db.Uuid
+  makerPersonId        String           @db.Uuid
+  makerMembershipId    String           @db.Uuid
+  createdVia           String           @default("WEB")
+  submittedAt          DateTime?        @db.Timestamptz(6)
+  finishedAt           DateTime?        @db.Timestamptz(6)
+  createdAt            DateTime         @default(now()) @db.Timestamptz(6)
+  updatedAt            DateTime         @updatedAt @db.Timestamptz(6)
+  version              Int              @default(1)
+
+  sourceAccount Account    @relation("BatchSource", fields: [sourceAccountId, corporateId], references: [id, corporateId])
+  rows          BatchRow[]
+
+  @@unique([corporateId, reference])
+  @@unique([id, corporateId])
+  @@index([corporateId, kind, state, createdAt])
+  @@schema("public")
+}
+
+/// Non-confidential row facts. Payroll amounts and employee identity live only in PayrollRowDetail.
+model BatchRow {
+  id                   String             @id @default(uuid(7)) @db.Uuid
+  batchId              String             @db.Uuid
+  corporateId          String             @db.Uuid
+  lineNumber           Int
+  rowReference         String?
+  validationState      RowValidationState
+  accepted             Boolean            @default(false)
+  /// [{ code, field, messageKey }] — codes only, never raw payroll values.
+  errors               Json               @default("[]")
+  warnings             Json               @default("[]")
+  // bulk-only fields (NULL for payroll rows)
+  amountMinor          BigInt?
+  currency             String?
+  beneficiaryName      String?
+  accountScheme        String?
+  accountReference     String?
+  purpose              String?
+  beneficiaryReference String?
+  // execution linkage
+  businessKey          String?
+  /// "<corporateId>:<businessKey>" while this row is the live carrier of the instruction.
+  activeBusinessKey    String?            @unique
+  instructionId        String?            @db.Uuid
+  executionState       RowExecutionState  @default(NONE)
+  failureCode          String?
+  retryOfRowId         String?            @db.Uuid
+  createdAt            DateTime           @default(now()) @db.Timestamptz(6)
+  updatedAt            DateTime           @updatedAt @db.Timestamptz(6)
+
+  batch   Batch             @relation(fields: [batchId, corporateId], references: [id, corporateId], onDelete: Cascade)
+  payroll PayrollRowDetail?
+
+  @@unique([batchId, lineNumber])
+  @@index([batchId, validationState])
+  @@index([batchId, executionState])
+  @@index([instructionId])
+  @@schema("public")
+}
+
+/// RESTRICTED: only code holding a PayrollDetailCapability may read this table (SEC-04, PYR-02).
+model PayrollRowDetail {
+  batchRowId          String           @id @db.Uuid
+  corporateId         String           @db.Uuid
+  employeeId          String?          @db.Uuid
+  employeeCode        String
+  employeeName        String?
+  accountScheme       String?
+  accountReference    String?
+  payPeriod           String
+  component           PayrollComponent?
+  basicMinor          BigInt?
+  allowancesMinor     BigInt?
+  deductionsMinor     BigInt?
+  correctionMinor     BigInt?
+  netMinor            BigInt?
+  payslipReference    String?
+  correctionReference String?
+  previousNetMinor    BigInt?
+  changeFlag          Boolean          @default(false)
+
+  row BatchRow @relation(fields: [batchRowId], references: [id], onDelete: Cascade)
+
+  @@index([corporateId, employeeId, payPeriod])
+  @@schema("public")
+}
+
+/// RESTRICTED employee master. No national identifiers are stored in R1 (PYR-01).
+model PayrollEmployee {
+  id                 String                 @id @default(uuid(7)) @db.Uuid
+  bankId             String                 @db.Uuid
+  corporateId        String                 @db.Uuid
+  employeeCode       String
+  name               String
+  accountScheme      String
+  accountReference   String
+  accountMatchStatus BeneficiaryMatchStatus @default(UNCHECKED)
+  matchCheckedAt     DateTime?              @db.Timestamptz(6)
+  active             Boolean                @default(true)
+  createdAt          DateTime               @default(now()) @db.Timestamptz(6)
+  updatedAt          DateTime               @updatedAt @db.Timestamptz(6)
+  version            Int                    @default(1)
+
+  @@unique([corporateId, employeeCode])
+  @@schema("public")
+}
+
+/// Preview-then-commit import session for customers and employees (COL-01, PYR-01).
+model ImportSession {
+  id                String     @id @default(uuid(7)) @db.Uuid
+  bankId            String     @db.Uuid
+  corporateId       String     @db.Uuid
+  kind              String
+  fileName          String
+  fileSha256        String
+  fileFormat        FileFormat
+  state             String     @default("PREVIEWED")
+  totalRows         Int
+  validRows         Int
+  invalidRows       Int
+  /// Validated preview rows with error codes. Employee previews are payroll-restricted.
+  rows              Json
+  acceptedHash      String
+  createdByPersonId String     @db.Uuid
+  committedAt       DateTime?  @db.Timestamptz(6)
+  expiresAt         DateTime   @db.Timestamptz(6)
+  createdAt         DateTime   @default(now()) @db.Timestamptz(6)
+  updatedAt         DateTime   @updatedAt @db.Timestamptz(6)
+  version           Int        @default(1)
+
+  @@index([corporateId, kind, createdAt])
+  @@schema("public")
+}

@@ -1,0 +1,40 @@
+# dependencies
+node_modules/
+.pnpm-store/
+
+# next / build output
+.next/
+out/
+dist/
+*.tsbuildinfo
+next-env.d.ts
+
+# generated code and assets (rebuilt by `pnpm db:generate` / `pnpm pwa:build`)
+src/generated/
+public/sw.js
+
+# environment and secrets — only the sample is tracked
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# private runtime storage (uploads, generated reports/receipts), local databases
+storage/
+var/
+*.sqlite
+
+# test and evidence artifacts (concise summaries are tracked under docs/audit)
+coverage/
+playwright-report/
+test-results/
+blob-report/
+artifacts/
+*.log
+logs/
+
+# editor / OS
+.DS_Store
+.idea/
+.vscode/

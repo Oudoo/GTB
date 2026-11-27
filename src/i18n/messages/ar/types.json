@@ -1,0 +1,146 @@
+{
+  "transactionType": {
+    "INSTANT_ACCOUNT_CREDIT": "تحويل فوري",
+    "ACH_CREDIT": "تحويل دائن عبر المقاصة الآلية",
+    "OWN_ACCOUNT_TRANSFER": "تحويل بين حسابات الشركة",
+    "BULK_CREDIT": "تحويل مجمّع",
+    "PAYROLL_SALARY": "رواتب — راتب",
+    "PAYROLL_ALLOWANCE": "رواتب — علاوة",
+    "BRANCH_CASH_DEPOSIT": "إيداع نقدي في الفرع",
+    "BRANCH_CHEQUE_DEPOSIT": "إيداع صك في الفرع"
+  },
+  "rail": {
+    "LYPAY": "القناة الفورية (محاكاة)",
+    "ACH": "المقاصة الآلية (محاكاة)",
+    "INTERNAL": "قيد داخلي",
+    "BRANCH": "الفرع"
+  },
+  "railHelp": {
+    "LYPAY": "قناة فورية محاكاة. غير مرتبطة بنظام LYPay الحقيقي.",
+    "ACH": "مقاصة محاكاة لها وقت إقفال وأيام عطلة. غير مرتبطة بنظام المقاصة الآلية الحقيقي.",
+    "INTERNAL": "يُقيَّد بين حسابات شركتك في النظام المصرفي المحاكى.",
+    "BRANCH": "يُسجَّل لدى شبّاك فرع محاكى."
+  },
+  "accountKind": {
+    "OPERATING": "تشغيلي",
+    "PAYROLL": "رواتب",
+    "SAVINGS": "ادخار",
+    "COLLECTION": "تحصيل"
+  },
+  "segment": {
+    "LARGE": "شركة كبيرة",
+    "MEDIUM": "شركة متوسطة",
+    "SMALL": "شركة صغيرة"
+  },
+  "provenance": {
+    "DEMO_UNCONFIRMED": "قيمة تجريبية — غير معتمدة",
+    "BANK_CONFIRMED": "معتمدة من المصرف"
+  },
+  "limitLevel": {
+    "rail": "سقف قناة الدفع",
+    "type": "نوع المعاملة",
+    "module": "الخدمة",
+    "corporate": "الشركة كلها",
+    "user": "أنت"
+  },
+  "limitLevelUpper": {
+    "TYPE": "نوع المعاملة",
+    "MODULE": "الخدمة",
+    "CORPORATE": "الشركة كلها",
+    "USER": "حدّك الشخصي"
+  },
+  "period": {
+    "ITEM": "لكل عملية",
+    "DAY": "لكل يوم عمل",
+    "MONTH": "لكل شهر ميلادي",
+    "BATCH": "لكل دفعة"
+  },
+  "metric": {
+    "AMOUNT": "المبلغ",
+    "ITEMS": "عدد العناصر"
+  },
+  "approvalClass": {
+    "PAYMENT": "دفعة",
+    "BULK": "تحويل مجمّع",
+    "PAYROLL": "مسيّر رواتب",
+    "CORPORATE_ADMIN": "تغيير صلاحيات",
+    "BANK_GOVERNANCE": "حوكمة المصرف",
+    "BANK_REPAIR": "معالجة العمليات",
+    "BRANCH_DEPOSIT": "إيداع في الفرع"
+  },
+  "eligibility": {
+    "OK": "يمكنك البتّ في هذا الطلب.",
+    "OWN_PROPOSAL": "أنت من أنشأ هذا الطلب، لذا يجب أن يبتّ فيه شخص آخر.",
+    "NO_PERMISSION": "دورك لا يشمل اعتماد هذا النوع من الطلبات.",
+    "NO_ACCOUNT_RIGHT": "ليست لديك صلاحية الاعتماد على هذا الحساب.",
+    "NOT_PERSON": "الاعتماد متاح فقط لشخص مسجّل الدخول.",
+    "WRONG_BRANCH": "هذا العنصر يتبع فرعًا آخر."
+  },
+  "windowReason": {
+    "BEFORE_OPEN": "لم تُفتح القناة بعد اليوم.",
+    "AFTER_CUTOFF": "انقضى وقت الإقفال لهذا اليوم.",
+    "CLOSED_DAY": "القناة مغلقة في ذلك اليوم.",
+    "CORE_OFFLINE": "النظام المصرفي في فترة التوقف المجدولة."
+  },
+  "timeline": {
+    "PAYMENT_CREATED": "أُنشئت المسودة",
+    "PAYMENT_SENT_FOR_APPROVAL": "أُرسل للاعتماد",
+    "PAYMENT_APPROVED": "تم الاعتماد",
+    "PAYMENT_QUEUED": "في قائمة التنفيذ — حُجز من الحد",
+    "PAYMENT_SCHEDULED": "مجدول لتاريخ التنفيذ",
+    "PAYMENT_PROCESSING": "بدأت المعالجة — حُجز المبلغ",
+    "PAYMENT_SUBMITTED": "قبلته قناة الدفع",
+    "PAYMENT_SETTLED": "تمت التسوية — قُيّد في النظام المصرفي",
+    "PAYMENT_FAILED": "فشل قبل القيد — لم يُخصم شيء",
+    "PAYMENT_STATUS_UNKNOWN": "لم يصل تأكيد — جارٍ التحقق من النتيجة",
+    "PAYMENT_RETURNED": "أُعيد — قُيّد قيد تعويضي",
+    "PAYMENT_REJECTED": "رفضه المدقق",
+    "PAYMENT_CANCELLED": "أُلغي",
+    "PAYMENT_EXPIRED": "انتهت مهلة الاعتماد دون قرار",
+    "PAYMENT_REVISED": "أُنشئت مراجعة جديدة — الاعتمادات السابقة ملغاة",
+    "REAPPROVAL_REQUIRED": "تغيّرت الشروط — يلزم الاعتماد من جديد",
+    "RELEASE_BLOCKED": "أوقف ضابطٌ التنفيذ",
+    "RELEASE_RETRY_REQUESTED": "طُلب التنفيذ مجددًا",
+    "UNKNOWN": "تحديث الحالة",
+    "BATCH_UPLOADED": "رُفع الملف",
+    "BATCH_VALIDATED": "تم التحقق من الأسطر",
+    "BATCH_VALIDATION_FAILED": "فشل التحقق — لا يمكن إرسال شيء",
+    "BATCH_ROWS_ACCEPTED": "تأكيد الأسطر المطلوب دفعها",
+    "BATCH_REVISED": "تغيّرت الأسطر — سقطت الاعتمادات السابقة",
+    "BATCH_SENT_FOR_APPROVAL": "أُرسلت للاعتماد",
+    "BATCH_APPROVED": "اعتُمدت",
+    "BATCH_PROCESSING": "بدأت المدفوعات — حُجزت الحدود",
+    "BATCH_COMPLETED": "اكتملت — سُوّيت جميع الأسطر",
+    "BATCH_PARTIALLY_COMPLETED": "انتهت — بعض الأسطر لم تُسوَّ",
+    "BATCH_FAILED": "فشلت — لم يُدفع أي سطر",
+    "BATCH_REJECTED": "رفضها المدقق",
+    "BATCH_EXPIRED": "انتهت مهلة الاعتماد دون قرار",
+    "BATCH_CANCELLED": "أُلغيت",
+    "BATCH_RETRY_CREATED": "أُنشئت دفعة إعادة محاولة من الأسطر الفاشلة",
+    "DEPOSIT_CAPTURED": "سُجّل الإيداع في الفرع",
+    "DEPOSIT_MANAGER_APPROVED": "اعتمده مدير الفرع",
+    "DEPOSIT_MANAGER_REJECTED": "رفضه مدير الفرع",
+    "DEPOSIT_EXPIRED": "انتهت مهلة الاعتماد دون قرار",
+    "DEPOSIT_POSTED": "قُيّد في النظام المصرفي",
+    "DEPOSIT_STATUS_UNKNOWN": "لم يصل تأكيد — النتيجة قيد التحقق",
+    "DEPOSIT_INQUIRY_NOT_FOUND": "غير موجود في النظام المصرفي — أُعيد إرساله بالمرجع نفسه",
+    "DEPOSIT_POSTING_REJECTED": "رفض النظام المصرفي القيد — لم يُقيَّد شيء",
+    "DEPOSIT_CHEQUE_CLEARED": "تم تحصيل الشيك",
+    "DEPOSIT_CHEQUE_RETURNED": "أُعيد الشيك — لم يُقيَّد شيء"
+  },
+  "failure": {
+    "INSUFFICIENT_FUNDS": "الرصيد المتاح لم يكفِ للمبلغ والرسوم.",
+    "BENEFICIARY_ACCOUNT_BLOCKED": "حساب المستفيد محظور.",
+    "BENEFICIARY_ACCOUNT_NOT_FOUND": "حساب المستفيد غير موجود.",
+    "RAIL_REJECTED": "رفضت قناة الدفع التعليمة.",
+    "ACCOUNT_BLOCKED": "حساب المصدر محظور.",
+    "ACCOUNT_NOT_FOUND": "حساب المصدر غير موجود في النظام المصرفي.",
+    "CORE_REJECTED": "رفض النظام المصرفي القيد.",
+    "DECLARED_UNPOSTED": "أكدت عمليات المصرف أنه لم يُقيَّد شيء.",
+    "BENEFICIARY_RETURNED": "أعاد الطرف المستلم الدفعة.",
+    "RETURNED": "أُعيدت الدفعة.",
+    "MAKER_INELIGIBLE": "منشئ هذه الدفعة لم تعد لديه الصلاحية المطلوبة.",
+    "REAPPROVAL_REQUIRED": "تغيّرت الرسوم أو متطلبات الاعتماد. يجب اعتمادها من جديد.",
+    "OTHER": "تعذّر تنفيذ التعليمة."
+  }
+}

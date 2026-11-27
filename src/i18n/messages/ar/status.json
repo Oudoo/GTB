@@ -1,0 +1,151 @@
+{
+  "payment": {
+    "DRAFT": "مسودة",
+    "PENDING_APPROVAL": "بانتظار الاعتماد",
+    "APPROVED": "معتمد",
+    "SCHEDULED": "مجدول",
+    "QUEUED": "في قائمة التنفيذ",
+    "PROCESSING": "قيد المعالجة",
+    "SUBMITTED": "أُرسل إلى قناة الدفع",
+    "SETTLED": "تمت التسوية",
+    "REJECTED": "مرفوض",
+    "CANCELLED": "ملغى",
+    "EXPIRED": "منتهي الصلاحية",
+    "FAILED": "فشل قبل القيد",
+    "STATUS_UNKNOWN": "جارٍ التحقق من النتيجة",
+    "RETURNED": "مُرتجع"
+  },
+  "paymentHelp": {
+    "DRAFT": "لم يُرسل بعد. يمكن لمنشئه فقط تعديله.",
+    "PENDING_APPROVAL": "بانتظار مدقق مستقل. لم يُخصم أي مبلغ.",
+    "APPROVED": "معتمد. سيُنفَّذ بعد الفحوص النهائية.",
+    "SCHEDULED": "معتمد وبانتظار تاريخ التنفيذ. يُعاد التحقق من الحدود والرصيد في ذلك التاريخ.",
+    "QUEUED": "معتمد وبانتظار خدمة المعالجة.",
+    "PROCESSING": "جارٍ إرساله للتنفيذ. المبلغ محجوز.",
+    "SUBMITTED": "قبلته قناة الدفع. هذه ليست تسوية بعد.",
+    "SETTLED": "قُيّد في النظام المصرفي. الخصم نهائي.",
+    "REJECTED": "رفض المدقق هذا الطلب. لم يُخصم أي مبلغ.",
+    "CANCELLED": "أُلغي قبل التنفيذ. لم يُخصم أي مبلغ.",
+    "EXPIRED": "انتهت مهلة الاعتماد قبل اتخاذ قرار.",
+    "FAILED": "فشل قطعًا قبل القيد. لم يُخصم أي مبلغ وأُفرج عن المبلغ المحجوز.",
+    "STATUS_UNKNOWN": "لم يؤكد المصرف النتيجة. نتحقق منها. لا تُعد الإرسال.",
+    "RETURNED": "سُوّي أولًا ثم أعاده الطرف المستلم. قُيّد قيد تعويضي."
+  },
+  "batch": {
+    "DRAFT": "مسودة",
+    "VALIDATING": "قيد التحقق",
+    "READY": "جاهز للمراجعة",
+    "PENDING_APPROVAL": "بانتظار الاعتماد",
+    "APPROVED": "معتمد",
+    "SCHEDULED": "مجدول",
+    "PROCESSING": "قيد المعالجة",
+    "COMPLETED": "مكتمل",
+    "PARTIALLY_COMPLETED": "مكتمل جزئيًا",
+    "FAILED": "فشل",
+    "REJECTED": "مرفوض",
+    "CANCELLED": "ملغى"
+  },
+  "row": {
+    "NONE": "لم يُنفَّذ",
+    "PENDING": "بالانتظار",
+    "PROCESSING": "قيد المعالجة",
+    "SUBMITTED": "أُرسل إلى قناة الدفع",
+    "SETTLED": "تمت التسوية",
+    "FAILED": "فشل قبل القيد",
+    "STATUS_UNKNOWN": "جارٍ التحقق من النتيجة",
+    "RETURNED": "مُرتجع",
+    "CANCELLED": "ملغى"
+  },
+  "validation": {
+    "VALID": "صحيح",
+    "INVALID": "غير صحيح",
+    "DUPLICATE": "مكرر"
+  },
+  "approval": {
+    "PENDING": "بانتظار القرار",
+    "APPROVED": "معتمد",
+    "REJECTED": "مرفوض",
+    "CANCELLED": "ملغى",
+    "SUPERSEDED": "استُبدل بمراجعة أحدث",
+    "EXPIRED": "منتهي الصلاحية"
+  },
+  "agreement": {
+    "DRAFT": "مسودة",
+    "ACTIVE": "سارية",
+    "SUSPENDED": "موقوفة",
+    "CLOSED": "مغلقة",
+    "EXPIRED": "منتهية",
+    "NOT_YET_EFFECTIVE": "لم تدخل حيز النفاذ بعد"
+  },
+  "agreementVersion": {
+    "DRAFT": "مسودة",
+    "PENDING_APPROVAL": "بانتظار اعتماد المصرف",
+    "APPROVED": "معتمدة — لم تدخل حيز النفاذ بعد",
+    "EFFECTIVE": "نافذة",
+    "SUPERSEDED": "حلّت محلها نسخة أحدث",
+    "REJECTED": "مرفوضة",
+    "WITHDRAWN": "مسحوبة"
+  },
+  "governance": {
+    "PENDING_APPROVAL": "بانتظار الاعتماد",
+    "APPROVED": "معتمد",
+    "EFFECTIVE": "نافذ",
+    "SUPERSEDED": "حلّ محله إصدار أحدث",
+    "REJECTED": "مرفوض",
+    "WITHDRAWN": "مسحوب"
+  },
+  "deposit": {
+    "DRAFT": "مسودة",
+    "PENDING_MANAGER": "بانتظار مدير الفرع",
+    "PENDING_POSTING": "قيد القيد",
+    "ACCEPTED_PENDING_CLEARING": "قُبل الصك — بانتظار المقاصة",
+    "POSTED": "تم القيد",
+    "RETURNED": "أُعيد الصك",
+    "REJECTED": "رفضه المدير",
+    "STATUS_UNKNOWN": "جارٍ التحقق من النتيجة",
+    "CANCELLED": "ملغى"
+  },
+  "membership": {
+    "ACTIVE": "نشط",
+    "SUSPENDED": "موقوف",
+    "INVITED": "مدعو"
+  },
+  "account": {
+    "ACTIVE": "نشط",
+    "FROZEN": "مجمّد",
+    "CLOSED": "مغلق"
+  },
+  "delivery": {
+    "R1_CORE": "متاح في هذا الإصدار",
+    "R1_SUBSET": "متاح جزئيًا في هذا الإصدار",
+    "R1_FOUNDATION": "الأساس متاح في هذا الإصدار",
+    "R2": "مخطط — الإصدار الثاني",
+    "R3": "مخطط — الإصدار الثالث"
+  },
+  "report": {
+    "PENDING": "قيد الإعداد",
+    "READY": "جاهز",
+    "FAILED": "فشل",
+    "EXPIRED": "منتهي الصلاحية"
+  },
+  "job": {
+    "PENDING": "بالانتظار",
+    "RUNNING": "قيد التشغيل",
+    "SUCCEEDED": "تم",
+    "DEAD": "يحتاج إلى متابعة",
+    "CANCELLED": "ملغى"
+  },
+  "webhookDelivery": {
+    "PENDING": "بالانتظار",
+    "DELIVERED": "تم التسليم",
+    "FAILED": "فشل — ستُعاد المحاولة",
+    "DEAD": "توقف بعد المحاولات"
+  },
+  "match": {
+    "UNCHECKED": "لم يُتحقق منه",
+    "MATCHED": "الاسم مطابق",
+    "CLOSE_MATCH": "تطابق قريب — يحتاج إقرارًا",
+    "MISMATCH": "الاسم غير مطابق",
+    "NOT_FOUND": "الحساب غير موجود"
+  }
+}

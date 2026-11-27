@@ -1,0 +1,180 @@
+// Customer register, minimal invoice references, teller deposits and receipts (COL-01..03).
+
+enum CollectionMethod {
+  OWN_BANK
+
+  @@schema("public")
+}
+
+enum InvoiceStatus {
+  OPEN
+  CANCELLED
+
+  @@schema("public")
+}
+
+enum DepositMethod {
+  CASH
+  CHEQUE
+
+  @@schema("public")
+}
+
+enum DepositState {
+  DRAFT
+  PENDING_MANAGER
+  PENDING_POSTING
+  ACCEPTED_PENDING_CLEARING
+  POSTED
+  RETURNED
+  REJECTED
+  STATUS_UNKNOWN
+  CANCELLED
+
+  @@schema("public")
+}
+
+enum ReceiptKind {
+  PENDING_ACKNOWLEDGMENT
+  POSTED
+
+  @@schema("public")
+}
+
+model Customer {
+  id                String           @id @default(uuid(7)) @db.Uuid
+  bankId            String           @db.Uuid
+  corporateId       String           @db.Uuid
+  /// Normalized, unique per corporate (not globally). Immutable once referenced.
+  code              String
+  displayName       String
+  company           String
+  mobileE164        String
+  industry          String?
+  tags              String[]
+  billingAddress    String?
+  collectionMethod  CollectionMethod @default(OWN_BANK)
+  referencedAt      DateTime?        @db.Timestamptz(6)
+  archivedAt        DateTime?        @db.Timestamptz(6)
+  createdByPersonId String           @db.Uuid
+  createdAt         DateTime         @default(now()) @db.Timestamptz(6)
+  updatedAt         DateTime         @updatedAt @db.Timestamptz(6)
+  version           Int              @default(1)
+
+  invoices InvoiceReference[]
+  deposits Deposit[]
+
+  @@unique([corporateId, code])
+  @@unique([id, corporateId])
+  @@index([corporateId, archivedAt, displayName])
+  @@schema("public")
+}
+
+/// Minimal collection context, not an AR ledger. Paid/due are derived from allocations.
+model InvoiceReference {
+  id                String        @id @default(uuid(7)) @db.Uuid
+  bankId            String        @db.Uuid
+  corporateId       String        @db.Uuid
+  customerId        String        @db.Uuid
+  reference         String
+  amountMinor       BigInt
+  currency          String
+  dueDate           DateTime      @db.Date
+  status            InvoiceStatus @default(OPEN)
+  /// Running net of allocation entries; maintained in the allocation transaction under row lock.
+  allocatedMinor    BigInt        @default(0)
+  createdByPersonId String        @db.Uuid
+  createdAt         DateTime      @default(now()) @db.Timestamptz(6)
+  updatedAt         DateTime      @updatedAt @db.Timestamptz(6)
+  version           Int           @default(1)
+
+  customer    Customer            @relation(fields: [customerId, corporateId], references: [id, corporateId])
+  allocations DepositAllocation[]
+
+  @@unique([corporateId, reference])
+  @@unique([id, corporateId])
+  @@index([customerId, status])
+  @@schema("public")
+}
+
+model Deposit {
+  id                 String        @id @default(uuid(7)) @db.Uuid
+  bankId             String        @db.Uuid
+  corporateId        String        @db.Uuid
+  customerId         String        @db.Uuid
+  branchId           String        @db.Uuid
+  creditAccountId    String        @db.Uuid
+  method             DepositMethod
+  amountMinor        BigInt
+  currency           String
+  depositorReference String
+  chequeReference    String?
+  /// Unique bank intake reference printed on the receipt.
+  intakeReference    String        @unique
+  state              DepositState
+  requiresManager    Boolean       @default(false)
+  cashReviewFlag     Boolean       @default(false)
+  contentHash        String
+  tellerPersonId     String        @db.Uuid
+  managerPersonId    String?       @db.Uuid
+  approvalRequestId  String?       @db.Uuid
+  executionReference String        @unique
+  coreReference      String?
+  postedAt           DateTime?     @db.Timestamptz(6)
+  businessDate       DateTime?     @db.Date
+  returnReason       String?
+  failureCode        String?
+  allocatedMinor     BigInt        @default(0)
+  inquiryCount       Int           @default(0)
+  createdAt          DateTime      @default(now()) @db.Timestamptz(6)
+  updatedAt          DateTime      @updatedAt @db.Timestamptz(6)
+  version            Int           @default(1)
+
+  customer      Customer            @relation(fields: [customerId, corporateId], references: [id, corporateId])
+  branch        Branch              @relation(fields: [branchId, bankId], references: [id, bankId])
+  creditAccount Account             @relation("DepositCredit", fields: [creditAccountId, corporateId], references: [id, corporateId])
+  allocations   DepositAllocation[]
+  receipts      Receipt[]
+
+  @@unique([id, corporateId])
+  @@index([corporateId, createdAt])
+  @@index([customerId, createdAt])
+  @@index([branchId, state, createdAt])
+  @@schema("public")
+}
+
+/// Append-only allocation entries; a reversal is a new negative entry linked to the original.
+model DepositAllocation {
+  id                   String   @id @default(uuid(7)) @db.Uuid
+  corporateId          String   @db.Uuid
+  depositId            String   @db.Uuid
+  invoiceId            String   @db.Uuid
+  amountMinor          BigInt
+  reversesAllocationId String?  @unique @db.Uuid
+  createdByPersonId    String?  @db.Uuid
+  createdAt            DateTime @default(now()) @db.Timestamptz(6)
+
+  deposit Deposit          @relation(fields: [depositId, corporateId], references: [id, corporateId])
+  invoice InvoiceReference @relation(fields: [invoiceId, corporateId], references: [id, corporateId])
+
+  @@index([depositId])
+  @@index([invoiceId])
+  @@schema("public")
+}
+
+/// Receipt issue record. The PDF is rendered on demand from immutable server data.
+model Receipt {
+  id                  String      @id @default(uuid(7)) @db.Uuid
+  bankId              String      @db.Uuid
+  corporateId         String      @db.Uuid
+  depositId           String      @db.Uuid
+  kind                ReceiptKind
+  reference           String      @unique
+  supersedesReceiptId String?     @db.Uuid
+  issuedAt            DateTime    @default(now()) @db.Timestamptz(6)
+
+  deposit Deposit @relation(fields: [depositId], references: [id])
+
+  @@unique([depositId, kind])
+  @@schema("public")
+}

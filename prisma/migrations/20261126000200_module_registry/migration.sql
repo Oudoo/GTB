@@ -1,0 +1,38 @@
+-- Immutable catalogue metadata: the 33 modules of the Al Qarib feature catalogue (AGR-03).
+-- Generated from src/contracts/modules.ts; an integration test asserts the table equals that registry.
+INSERT INTO "ModuleDefinition"
+  ("catalogueId", "domainNo", "sortOrder", "name", "nameAr", "deliveryStatus", "limitBasis", "rails", "r1TransactionTypes", "sourcePages")
+VALUES
+  ('1.1', 1, 1, 'Instant payments', 'المدفوعات الفورية', 'R1_SUBSET', 'Amount', ARRAY['LYPay']::text[], ARRAY['INSTANT_ACCOUNT_CREDIT']::"TransactionType"[], '1,5'),
+  ('1.2', 1, 2, 'ACH', 'المقاصة الآلية (ACH)', 'R1_SUBSET', 'Amount, items', ARRAY['ACH']::text[], ARRAY['ACH_CREDIT']::"TransactionType"[], '1,5'),
+  ('1.3', 1, 3, 'RTGS', 'التسوية الإجمالية الآنية (RTGS)', 'R2', 'Amount', ARRAY['RTGS']::text[], ARRAY[]::"TransactionType"[], '1,5'),
+  ('1.4', 1, 4, 'SWIFT payments', 'مدفوعات سويفت', 'R3', 'Amount per currency', ARRAY['SWIFT']::text[], ARRAY[]::"TransactionType"[], '1,6'),
+  ('1.5', 1, 5, 'Own-account and scheduled transfers', 'التحويل بين حسابات الشركة والتحويلات المجدولة', 'R1_SUBSET', 'Amount', ARRAY['Internal']::text[], ARRAY['OWN_ACCOUNT_TRANSFER']::"TransactionType"[], '1,6'),
+  ('2.1', 2, 6, 'Bulk transfers', 'التحويلات المجمعة', 'R1_SUBSET', 'Batch total, items', ARRAY['LYPay', 'ACH']::text[], ARRAY['BULK_CREDIT']::"TransactionType"[], '2,6'),
+  ('2.2', 2, 7, 'Payroll', 'الرواتب', 'R1_SUBSET', 'Batch total, items', ARRAY['ACH', 'LYPay']::text[], ARRAY['PAYROLL_SALARY', 'PAYROLL_ALLOWANCE']::"TransactionType"[], '2,7'),
+  ('3.1', 3, 8, 'Customer ID and collection list', 'رمز العميل وقائمة التحصيل', 'R1_CORE', 'n/a', ARRAY[]::text[], ARRAY[]::"TransactionType"[], '2,8-9'),
+  ('3.2', 3, 9, 'Branch deposits by customer code', 'الإيداع في الفروع برمز العميل', 'R1_SUBSET', 'Amount per deposit', ARRAY['Branch', 'ACH']::text[], ARRAY['BRANCH_CASH_DEPOSIT', 'BRANCH_CHEQUE_DEPOSIT']::"TransactionType"[], '2,9'),
+  ('3.3', 3, 10, 'Deposit summary and receipts', 'ملخص الإيداعات والإيصالات', 'R1_CORE', 'n/a', ARRAY[]::text[], ARRAY[]::"TransactionType"[], '2,9'),
+  ('3.4', 3, 11, 'Payment links', 'روابط الدفع', 'R2', 'Amount', ARRAY['LYPay', 'card']::text[], ARRAY[]::"TransactionType"[], '2,9'),
+  ('3.5', 3, 12, 'QR collections', 'التحصيل برمز الاستجابة السريعة', 'R2', 'Amount', ARRAY['LYPay']::text[], ARRAY[]::"TransactionType"[], '2,9'),
+  ('4.1', 4, 13, 'Virtual account structure', 'هيكل الحسابات الافتراضية', 'R2', 'Items', ARRAY['Internal']::text[], ARRAY[]::"TransactionType"[], '2,10'),
+  ('4.2', 4, 14, 'Auto-reconciliation and sweeping', 'المطابقة الآلية والتجميع', 'R2', 'Amount', ARRAY['Internal']::text[], ARRAY[]::"TransactionType"[], '2,10'),
+  ('5.1', 5, 15, 'Certified cheque', 'الصك المصدق', 'R3', 'Amount held', ARRAY['ACH']::text[], ARRAY[]::"TransactionType"[], '2,11'),
+  ('5.2', 5, 16, 'LG/LC escrow', 'حساب الضمان للاعتمادات وخطابات الضمان', 'R3', 'Amount held', ARRAY['ACH', 'RTGS']::text[], ARRAY[]::"TransactionType"[], '2,11'),
+  ('6.1', 6, 17, 'Documentary collections', 'التحصيلات المستندية', 'R3', 'Exposure', ARRAY['SWIFT', 'ACH']::text[], ARRAY[]::"TransactionType"[], '2,12'),
+  ('6.2', 6, 18, 'Letters of credit', 'الاعتمادات المستندية', 'R3', 'Exposure', ARRAY['SWIFT']::text[], ARRAY[]::"TransactionType"[], '2,12'),
+  ('6.3', 6, 19, 'Guarantees', 'خطابات الضمان', 'R3', 'Exposure', ARRAY['SWIFT']::text[], ARRAY[]::"TransactionType"[], '2,12'),
+  ('7.1', 7, 20, 'Cash concentration', 'تركيز النقد', 'R2', 'Amount', ARRAY['Internal']::text[], ARRAY[]::"TransactionType"[], '2,13'),
+  ('7.2', 7, 21, 'Liquidity alerts', 'تنبيهات السيولة', 'R1_SUBSET', 'n/a', ARRAY[]::text[], ARRAY[]::"TransactionType"[], '2,13'),
+  ('8.1', 8, 22, 'Cheque issuance', 'إصدار الصكوك', 'R3', 'Amount, items', ARRAY['ACH']::text[], ARRAY[]::"TransactionType"[], '2,13'),
+  ('8.2', 8, 23, 'Cheque management', 'إدارة الصكوك', 'R3', 'Items', ARRAY['ACH']::text[], ARRAY[]::"TransactionType"[], '3,13'),
+  ('9.1', 9, 24, 'Corporate debit and prepaid cards', 'بطاقات الخصم والبطاقات المسبقة الدفع للشركات', 'R3', 'Amount', ARRAY['Card network']::text[], ARRAY[]::"TransactionType"[], '3,13'),
+  ('9.2', 9, 25, 'Corporate credit cards', 'بطاقات الائتمان للشركات', 'R3', 'Credit limit', ARRAY['Card network']::text[], ARRAY[]::"TransactionType"[], '3,14'),
+  ('10.1', 10, 26, 'API connectivity', 'الربط عبر واجهات برمجة التطبيقات', 'R1_FOUNDATION', 'Calls', ARRAY['API']::text[], ARRAY[]::"TransactionType"[], '3,14-16'),
+  ('10.2', 10, 27, 'Host-to-host and file exchange', 'الربط المباشر وتبادل الملفات', 'R2', 'Items', ARRAY['File']::text[], ARRAY[]::"TransactionType"[], '3,14'),
+  ('10.3', 10, 28, 'ERP connectors', 'موصلات أنظمة تخطيط الموارد', 'R3', 'n/a', ARRAY['API']::text[], ARRAY[]::"TransactionType"[], '3,14'),
+  ('11.1', 11, 29, 'Statements and reports', 'كشوف الحساب والتقارير', 'R1_SUBSET', 'n/a', ARRAY[]::text[], ARRAY[]::"TransactionType"[], '3,14'),
+  ('11.2', 11, 30, 'Cash forecasting', 'توقعات التدفق النقدي', 'R2', 'n/a', ARRAY[]::text[], ARRAY[]::"TransactionType"[], '3,14'),
+  ('12.1', 12, 31, 'Users and roles', 'المستخدمون والأدوار', 'R1_CORE', 'n/a', ARRAY[]::text[], ARRAY[]::"TransactionType"[], '3-5,14'),
+  ('12.2', 12, 32, 'Approval matrix', 'مصفوفة الاعتماد', 'R1_CORE', 'n/a', ARRAY[]::text[], ARRAY[]::"TransactionType"[], '3-5,15'),
+  ('12.3', 12, 33, 'Agreement and limits console', 'لوحة الاتفاقية والحدود', 'R1_CORE', 'n/a', ARRAY[]::text[], ARRAY[]::"TransactionType"[], '3-5,15');

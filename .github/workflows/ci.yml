@@ -1,0 +1,104 @@
+# Continuous verification of the sandbox MVP. Everything runs against a real PostgreSQL 16
+# service; integration tests are never skipped and never fall back to another database.
+# The service password below is a throwaway value for the job's private container, not a
+# credential of any environment.
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NEXT_TELEMETRY_DISABLED: "1"
+  CI_POSTGRES_PASSWORD: ci-throwaway-postgres
+
+jobs:
+  verify:
+    name: lint, types, unit, integration, contract, build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: ci-throwaway-postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Private environment file with generated secrets
+        run: |
+          pnpm setup:env
+          echo "POSTGRES_ADMIN_URL=postgresql://postgres:${CI_POSTGRES_PASSWORD}@127.0.0.1:5432/postgres" >> .env
+      - name: Roles, database and migrations (owner and runtime roles are separate)
+        run: |
+          pnpm db:local
+          pnpm db:migrate
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm test:unit
+      - run: pnpm test:integration
+      - run: pnpm test:contract
+      - run: pnpm openapi:check
+      - run: pnpm build
+
+  e2e:
+    name: browser journeys (production build, separate worker)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: ci-throwaway-postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Private environment file with generated secrets
+        run: |
+          pnpm setup:env
+          echo "POSTGRES_ADMIN_URL=postgresql://postgres:${CI_POSTGRES_PASSWORD}@127.0.0.1:5432/postgres" >> .env
+      - run: pnpm db:local
+      - run: pnpm build
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm test:e2e --trace off
+      - name: Keep the journey report when something failed
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-results
+          path: |
+            test-results/e2e-results.json
+            test-results/e2e-logs
+          retention-days: 7

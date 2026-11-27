@@ -1,0 +1,215 @@
+// Reports, operations recovery, reconciliation, alerts and notifications (RPT-01, OPS-01, ALT-01).
+
+enum ReportType {
+  STATEMENT
+  DEPOSIT_SUMMARY
+  CUSTOMER_EXPORT
+  BATCH_RESULT
+  BATCH_ERRORS
+  PAYROLL_DETAIL
+  PAYROLL_ERRORS
+  AUDIT_EXPORT
+
+  @@schema("public")
+}
+
+enum ReportFormat {
+  CSV
+  PDF
+
+  @@schema("public")
+}
+
+enum ReportState {
+  PENDING
+  READY
+  FAILED
+  EXPIRED
+
+  @@schema("public")
+}
+
+enum RepairAction {
+  RESUBMIT_SAME_REFERENCE
+  MARK_FAILED_UNPOSTED
+
+  @@schema("public")
+}
+
+enum RepairStatus {
+  PENDING_APPROVAL
+  APPROVED
+  REJECTED
+  EXECUTED
+  FAILED
+
+  @@schema("public")
+}
+
+enum ReconBreakKind {
+  MISSING_IN_CORE
+  UNEXPECTED_IN_CORE
+  DUPLICATE_IN_CORE
+  AMOUNT_MISMATCH
+  STATUS_MISMATCH
+
+  @@schema("public")
+}
+
+enum AlertKind {
+  LOW_BALANCE
+  LIMIT_USAGE
+
+  @@schema("public")
+}
+
+model Report {
+  id                      String       @id @default(uuid(7)) @db.Uuid
+  bankId                  String       @db.Uuid
+  corporateId             String?      @db.Uuid
+  type                    ReportType
+  format                  ReportFormat
+  params                  Json
+  accountIds              String[]     @db.Uuid
+  /// Restricted report types need the payroll-detail permission at request AND download time.
+  restricted              Boolean      @default(false)
+  locale                  String       @default("en")
+  requestedByPersonId     String       @db.Uuid
+  requestedByMembershipId String       @db.Uuid
+  state                   ReportState  @default(PENDING)
+  storageKey              String?
+  checksum                String?
+  sizeBytes               Int?
+  fileName                String?
+  rowCount                Int?
+  projectionVersion       Int          @default(1)
+  failureCode             String?
+  expiresAt               DateTime     @db.Timestamptz(6)
+  createdAt               DateTime     @default(now()) @db.Timestamptz(6)
+  updatedAt               DateTime     @updatedAt @db.Timestamptz(6)
+
+  @@index([corporateId, createdAt])
+  @@index([requestedByPersonId, createdAt])
+  @@schema("public")
+}
+
+/// Safe recovery proposal; a financial resubmission always needs an independent bank checker.
+model RepairProposal {
+  id                 String       @id @default(uuid(7)) @db.Uuid
+  bankId             String       @db.Uuid
+  corporateId        String       @db.Uuid
+  instructionId      String       @db.Uuid
+  attemptId          String       @db.Uuid
+  action             RepairAction
+  reason             String
+  evidenceReference  String?
+  payloadHash        String
+  status             RepairStatus @default(PENDING_APPROVAL)
+  proposedByPersonId String       @db.Uuid
+  approvalRequestId  String?      @unique @db.Uuid
+  outcome            Json?
+  /// attemptId while the proposal is open: one open proposal per attempt.
+  activeKey          String?      @unique
+  createdAt          DateTime     @default(now()) @db.Timestamptz(6)
+  updatedAt          DateTime     @updatedAt @db.Timestamptz(6)
+
+  @@index([bankId, status])
+  @@schema("public")
+}
+
+model ReconciliationRun {
+  id                String    @id @default(uuid(7)) @db.Uuid
+  bankId            String    @db.Uuid
+  businessDate      DateTime  @db.Date
+  state             String    @default("RUNNING")
+  startedByPersonId String?   @db.Uuid
+  expectedCount     Int       @default(0)
+  coreCount         Int       @default(0)
+  matchedCount      Int       @default(0)
+  breakCount        Int       @default(0)
+  failureCode       String?
+  startedAt         DateTime  @default(now()) @db.Timestamptz(6)
+  finishedAt        DateTime? @db.Timestamptz(6)
+
+  breaks ReconciliationBreak[]
+
+  @@index([bankId, businessDate, startedAt])
+  @@schema("public")
+}
+
+model ReconciliationBreak {
+  id                 String         @id @default(uuid(7)) @db.Uuid
+  runId              String         @db.Uuid
+  bankId             String         @db.Uuid
+  corporateId        String?        @db.Uuid
+  kind               ReconBreakKind
+  executionReference String
+  expected           Json?
+  actual             Json?
+  state              String         @default("OPEN")
+  createdAt          DateTime       @default(now()) @db.Timestamptz(6)
+  updatedAt          DateTime       @updatedAt @db.Timestamptz(6)
+
+  run         ReconciliationRun          @relation(fields: [runId], references: [id])
+  resolutions ReconciliationResolution[]
+
+  @@index([bankId, state])
+  @@schema("public")
+}
+
+/// Append-only resolution history; a resolution never edits the ledger (OPS-01).
+model ReconciliationResolution {
+  id                String   @id @default(uuid(7)) @db.Uuid
+  breakId           String   @db.Uuid
+  disposition       String
+  reason            String
+  evidenceReference String?
+  actorPersonId     String   @db.Uuid
+  createdAt         DateTime @default(now()) @db.Timestamptz(6)
+
+  break ReconciliationBreak @relation(fields: [breakId], references: [id])
+
+  @@index([breakId, createdAt])
+  @@schema("public")
+}
+
+model AlertRule {
+  id                String    @id @default(uuid(7)) @db.Uuid
+  bankId            String    @db.Uuid
+  corporateId       String    @db.Uuid
+  kind              AlertKind
+  accountId         String?   @db.Uuid
+  thresholdMinor    BigInt?
+  currency          String?
+  /// Usage alerts: basis points of the limit (8000 = 80%) and the counter scope.
+  thresholdBps      Int?
+  usageScopeKey     String?
+  usagePeriod       String?
+  active            Boolean   @default(true)
+  createdByPersonId String    @db.Uuid
+  createdAt         DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt         DateTime  @updatedAt @db.Timestamptz(6)
+  version           Int       @default(1)
+
+  @@index([corporateId, active])
+  @@schema("public")
+}
+
+/// In-app alert. `eventKey` + recipient is unique so a retried job cannot duplicate it.
+model Notification {
+  id                String    @id @default(uuid(7)) @db.Uuid
+  bankId            String    @db.Uuid
+  corporateId       String?   @db.Uuid
+  recipientPersonId String    @db.Uuid
+  eventKey          String
+  kind              String
+  /// Redacted parameters only (never salary or employee detail).
+  params            Json
+  linkPath          String?
+  readAt            DateTime? @db.Timestamptz(6)
+  createdAt         DateTime  @default(now()) @db.Timestamptz(6)
+
+  @@unique([recipientPersonId, eventKey])
+  @@index([recipientPersonId, readAt, createdAt])
+  @@schema("public")
+}

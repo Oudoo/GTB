@@ -1,0 +1,57 @@
+{
+  "home": "الرئيسية",
+  "dashboard": "لوحة المتابعة",
+  "accounts": "الحسابات",
+  "payments": "المدفوعات",
+  "beneficiaries": "المستفيدون",
+  "approvals": "الاعتمادات",
+  "batches": "التحويلات المجمعة",
+  "payroll": "الرواتب",
+  "payrollEmployees": "الموظفون",
+  "customers": "العملاء",
+  "deposits": "الإيداعات",
+  "reports": "التقارير",
+  "agreement": "الاتفاقية",
+  "limits": "الحدود والاستخدام",
+  "adminUsers": "المستخدمون والصلاحيات",
+  "adminRules": "قواعد الاعتماد",
+  "notifications": "التنبيهات",
+  "developer": "المطوّرون",
+  "audit": "سجل التدقيق",
+  "products": "دليل المنتجات",
+  "more": "المزيد",
+  "groups": {
+    "cash": "النقد",
+    "pay": "الدفع",
+    "collect": "التحصيل",
+    "control": "الضوابط",
+    "administer": "الإدارة"
+  },
+  "bank": {
+    "overview": "نظرة عامة",
+    "corporates": "الشركات",
+    "approvals": "اعتمادات الحوكمة",
+    "railParameters": "معايير قنوات الدفع",
+    "teller": "إيداعات الصراف",
+    "branchApprovals": "اعتمادات الفرع",
+    "operations": "عمليات المدفوعات",
+    "reconciliation": "المطابقة",
+    "simulator": "محاكي البيئة التجريبية",
+    "audit": "سجل التدقيق",
+    "groups": {
+      "govern": "الحوكمة",
+      "branch": "الفرع",
+      "operate": "العمليات"
+    }
+  },
+  "context": {
+    "switch": "تبديل مساحة العمل",
+    "current": "مساحة العمل الحالية",
+    "choose": "اختر مساحة عمل",
+    "chooseBody": "لديك صلاحية على أكثر من مساحة عمل. اختر أين تعمل. التبديل يمسح ما على الشاشة.",
+    "corporateWorkspace": "مساحة عمل الشركة",
+    "bankWorkspace": "مساحة عمل المصرف",
+    "none": "لا توجد مساحة عمل نشطة لحسابك. تواصل مع مسؤول النظام."
+  },
+  "pendingApprovals": "{count, plural, =0 {لا توجد اعتمادات بالانتظار} one {اعتماد واحد بالانتظار} two {اعتمادان بالانتظار} few {# اعتمادات بالانتظار} many {# اعتمادًا بالانتظار} other {# اعتماد بالانتظار}}"
+}

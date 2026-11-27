@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#10233F" />
+    <meta name="robots" content="noindex" />
+    <title>Offline · Al Qarib</title>
+    <!--
+      Generic offline document (PWA-05). It is self-contained and contains NO account, tenant,
+      person, balance or activity data. It is the only page the service worker can show offline.
+    -->
+    <style>
+      :root { color-scheme: light; }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0; min-height: 100vh; min-height: 100dvh; display: grid; place-items: center;
+        background: #f5f7fa; color: #15253b;
+        font-family: system-ui, -apple-system, "Segoe UI", Tahoma, Arial, sans-serif; line-height: 1.5;
+        padding: calc(24px + env(safe-area-inset-top, 0px)) 20px calc(24px + env(safe-area-inset-bottom, 0px));
+      }
+      main {
+        width: 100%; max-width: 440px; background: #fff; border: 1px solid #d7dfe8; border-radius: 12px;
+        padding: 28px 24px; text-align: center;
+      }
+      .mark { width: 56px; height: 56px; border-radius: 14px; background: #10233f; margin: 0 auto 16px; display: grid; place-items: center; }
+      .mark span { width: 26px; height: 26px; border-radius: 50%; border: 5px solid #5fc3cb; border-inline-end-color: transparent; display: block; }
+      h1 { font-size: 20px; margin: 0 0 8px; }
+      p { margin: 0 0 12px; color: #53647a; font-size: 15px; }
+      section + section { border-top: 1px solid #d7dfe8; margin-top: 18px; padding-top: 18px; }
+      button {
+        appearance: none; border: 0; border-radius: 8px; background: #006d77; color: #fff; font: inherit; font-weight: 600;
+        min-height: 44px; padding: 10px 20px; margin-top: 6px; cursor: pointer;
+      }
+      button:focus-visible { outline: 3px solid #15253b; outline-offset: 2px; }
+      .note { font-size: 13px; margin-top: 16px; margin-bottom: 0; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <div class="mark" aria-hidden="true"><span></span></div>
+      <section lang="en" dir="ltr">
+        <h1>You are offline</h1>
+        <p>Al Qarib needs a live connection. For your security, no banking information is stored on this device, and nothing can be submitted while offline.</p>
+      </section>
+      <section lang="ar" dir="rtl">
+        <h1>أنت غير متصل</h1>
+        <p>يحتاج القريب إلى اتصال مباشر. حفاظًا على أمانك، لا تُخزَّن أي معلومات مصرفية على هذا الجهاز، ولا يمكن إرسال أي شيء دون اتصال.</p>
+      </section>
+      <button type="button" id="retry">Try again · إعادة المحاولة</button>
+      <p class="note">Sandbox — simulated funds · بيئة تجريبية — أموال محاكاة</p>
+    </main>
+    <script>
+      document.getElementById("retry").addEventListener("click", function () {
+        window.location.reload();
+      });
+      window.addEventListener("online", function () {
+        window.location.reload();
+      });
+    </script>
+  </body>
+</html>

@@ -1,0 +1,356 @@
+// Agreements, policy and governance (AGR-01..03, ADM-01..02, LIM-01, LIM-04).
+
+enum DeliveryStatus {
+  R1_CORE
+  R1_SUBSET
+  R1_FOUNDATION
+  R2
+  R3
+
+  @@schema("public")
+}
+
+enum AgreementStatus {
+  DRAFT
+  ACTIVE
+  SUSPENDED
+  CLOSED
+
+  @@schema("public")
+}
+
+enum AgreementVersionStatus {
+  DRAFT
+  PENDING_APPROVAL
+  APPROVED
+  EFFECTIVE
+  SUPERSEDED
+  REJECTED
+  WITHDRAWN
+
+  @@schema("public")
+}
+
+enum LimitScope {
+  TYPE
+  MODULE
+  CORPORATE
+
+  @@schema("public")
+}
+
+enum LimitMetric {
+  AMOUNT
+  ITEMS
+
+  @@schema("public")
+}
+
+enum LimitPeriod {
+  ITEM
+  DAY
+  MONTH
+  BATCH
+
+  @@schema("public")
+}
+
+enum GovernanceStatus {
+  PENDING_APPROVAL
+  APPROVED
+  EFFECTIVE
+  SUPERSEDED
+  REJECTED
+  WITHDRAWN
+
+  @@schema("public")
+}
+
+enum UserChangeKind {
+  INVITE
+  ROLE_CHANGE
+  GRANT_CHANGE
+  LIMIT_CHANGE
+  REACTIVATE
+
+  @@schema("public")
+}
+
+/// Immutable catalogue metadata: all 33 modules, exactly once (AGR-03).
+model ModuleDefinition {
+  catalogueId        String            @id
+  domainNo           Int
+  sortOrder          Int               @unique
+  name               String
+  nameAr             String
+  deliveryStatus     DeliveryStatus
+  limitBasis         String
+  rails              String[]
+  r1TransactionTypes TransactionType[]
+  sourcePages        String
+
+  entitlements ModuleEntitlement[]
+
+  @@schema("public")
+}
+
+model Agreement {
+  id                  String          @id @default(uuid(7)) @db.Uuid
+  bankId              String          @db.Uuid
+  corporateId         String          @unique @db.Uuid
+  status              AgreementStatus @default(DRAFT)
+  suspendedAt         DateTime?       @db.Timestamptz(6)
+  suspendedByPersonId String?         @db.Uuid
+  suspensionReason    String?
+  createdAt           DateTime        @default(now()) @db.Timestamptz(6)
+  updatedAt           DateTime        @updatedAt @db.Timestamptz(6)
+  version             Int             @default(1)
+
+  corporate Corporate          @relation(fields: [corporateId], references: [id])
+  versions  AgreementVersion[]
+
+  @@index([bankId])
+  @@schema("public")
+}
+
+/// Full immutable revision. `terms` is the hashed snapshot; the relational children
+/// (entitlements, limits, fees, approval bands) are materialized from it in the same transaction.
+model AgreementVersion {
+  id                 String                 @id @default(uuid(7)) @db.Uuid
+  agreementId        String                 @db.Uuid
+  bankId             String                 @db.Uuid
+  corporateId        String                 @db.Uuid
+  versionNo          Int
+  status             AgreementVersionStatus
+  segment            Segment
+  effectiveFrom      DateTime               @db.Timestamptz(6)
+  /// Exclusive end.
+  effectiveUntil     DateTime               @db.Timestamptz(6)
+  terms              Json
+  termsHash          String
+  /// Simulated attestation records; no e-signature integration is claimed (D17).
+  signatureEvidence  Json
+  changeReason       String
+  proposedByPersonId String                 @db.Uuid
+  approvedByPersonId String?                @db.Uuid
+  approvedAt         DateTime?              @db.Timestamptz(6)
+  decisionReason     String?
+  approvalRequestId  String?                @unique @db.Uuid
+  createdAt          DateTime               @default(now()) @db.Timestamptz(6)
+  updatedAt          DateTime               @updatedAt @db.Timestamptz(6)
+  version            Int                    @default(1)
+
+  agreement     Agreement           @relation(fields: [agreementId], references: [id])
+  entitlements  ModuleEntitlement[]
+  limitRules    LimitRule[]
+  feeRules      FeeRule[]
+  approvalRules ApprovalRule[]
+
+  @@unique([agreementId, versionNo])
+  @@index([corporateId, status])
+  @@schema("public")
+}
+
+model ModuleEntitlement {
+  id                 String            @id @default(uuid(7)) @db.Uuid
+  agreementVersionId String            @db.Uuid
+  corporateId        String            @db.Uuid
+  moduleId           String
+  allowedTypes       TransactionType[]
+  currency           String
+  rowCap             Int?
+
+  agreementVersion AgreementVersion           @relation(fields: [agreementVersionId], references: [id], onDelete: Cascade)
+  module           ModuleDefinition           @relation(fields: [moduleId], references: [catalogueId])
+  accounts         ModuleEntitlementAccount[]
+
+  @@unique([agreementVersionId, moduleId])
+  @@schema("public")
+}
+
+model ModuleEntitlementAccount {
+  entitlementId String  @db.Uuid
+  accountId     String  @db.Uuid
+  corporateId   String  @db.Uuid
+  allowDebit    Boolean @default(false)
+  allowCredit   Boolean @default(false)
+
+  entitlement ModuleEntitlement @relation(fields: [entitlementId], references: [id], onDelete: Cascade)
+
+  @@id([entitlementId, accountId])
+  @@schema("public")
+}
+
+/// One rule carries either an amount (valueMinor+currency) or an item count, never both.
+model LimitRule {
+  id                 String           @id @default(uuid(7)) @db.Uuid
+  agreementVersionId String           @db.Uuid
+  scope              LimitScope
+  moduleId           String?
+  transactionType    TransactionType?
+  metric             LimitMetric
+  period             LimitPeriod
+  currency           String?
+  valueMinor         BigInt?
+  itemCount          Int?
+  provenance         Provenance       @default(DEMO_UNCONFIRMED)
+
+  agreementVersion AgreementVersion @relation(fields: [agreementVersionId], references: [id], onDelete: Cascade)
+
+  @@index([agreementVersionId])
+  @@schema("public")
+}
+
+/// Fixed fee per child transfer. An explicit zero is a tariff; a missing row is "not configured".
+model FeeRule {
+  id                 String          @id @default(uuid(7)) @db.Uuid
+  agreementVersionId String          @db.Uuid
+  transactionType    TransactionType
+  currency           String
+  fixedMinor         BigInt
+
+  agreementVersion AgreementVersion @relation(fields: [agreementVersionId], references: [id], onDelete: Cascade)
+
+  @@unique([agreementVersionId, transactionType, currency])
+  @@schema("public")
+}
+
+/// Bank floor band: inclusive minimum, exclusive maximum (NULL = explicit unbounded top band).
+model ApprovalRule {
+  id                 String          @id @default(uuid(7)) @db.Uuid
+  agreementVersionId String          @db.Uuid
+  moduleId           String
+  transactionType    TransactionType
+  currency           String
+  minMinor           BigInt
+  maxExclusiveMinor  BigInt?
+  checkerCount       Int
+
+  agreementVersion AgreementVersion @relation(fields: [agreementVersionId], references: [id], onDelete: Cascade)
+
+  @@unique([agreementVersionId, transactionType, currency, minMinor])
+  @@schema("public")
+}
+
+/// Corporate-proposed stronger approval bands (can only strengthen bank floors, ADM-02).
+model CorporateRuleSet {
+  id                 String           @id @default(uuid(7)) @db.Uuid
+  bankId             String           @db.Uuid
+  corporateId        String           @db.Uuid
+  versionNo          Int
+  status             GovernanceStatus
+  /// [{ transactionType, currency, minMinor, maxExclusiveMinor, checkerCount }]
+  bands              Json
+  bandsHash          String
+  changeReason       String
+  proposedByPersonId String           @db.Uuid
+  approvalRequestId  String?          @unique @db.Uuid
+  effectiveAt        DateTime?        @db.Timestamptz(6)
+  createdAt          DateTime         @default(now()) @db.Timestamptz(6)
+  updatedAt          DateTime         @updatedAt @db.Timestamptz(6)
+
+  @@unique([corporateId, versionNo])
+  @@index([corporateId, status])
+  @@schema("public")
+}
+
+model BankCalendar {
+  id          String     @id @default(uuid(7)) @db.Uuid
+  bankId      String     @db.Uuid
+  code        String
+  name        String
+  timezone    String
+  /// ISO weekday numbers (1 = Monday … 7 = Sunday) that are closed for clearing.
+  weekendDays Int[]
+  provenance  Provenance @default(DEMO_UNCONFIRMED)
+  createdAt   DateTime   @default(now()) @db.Timestamptz(6)
+  updatedAt   DateTime   @updatedAt @db.Timestamptz(6)
+
+  bank       Bank                @relation(fields: [bankId], references: [id])
+  closedDays CalendarClosedDay[]
+
+  @@unique([bankId, code])
+  @@schema("public")
+}
+
+model CalendarClosedDay {
+  calendarId String   @db.Uuid
+  date       DateTime @db.Date
+  label      String
+
+  calendar BankCalendar @relation(fields: [calendarId], references: [id], onDelete: Cascade)
+
+  @@id([calendarId, date])
+  @@schema("public")
+}
+
+/// Bank-governed rail parameters. A NULL per-item ceiling fails closed (LIM-01).
+model RailParameter {
+  id                     String           @id @default(uuid(7)) @db.Uuid
+  bankId                 String           @db.Uuid
+  rail                   Rail
+  currency               String
+  versionNo              Int
+  status                 GovernanceStatus
+  perItemMinor           BigInt?
+  provenance             Provenance       @default(DEMO_UNCONFIRMED)
+  calendarId             String           @db.Uuid
+  /// Local bank time "HH:MM"; NULL means the rail is open around the clock.
+  openLocalTime          String?
+  cutoffLocalTime        String?
+  observesClosedDays     Boolean          @default(false)
+  /// Core offline window for INTERNAL postings (local bank time), both or neither.
+  offlineStartLocalTime  String?
+  offlineEndLocalTime    String?
+  settlementDelaySeconds Int              @default(0)
+  effectiveFrom          DateTime         @db.Timestamptz(6)
+  changeReason           String
+  payloadHash            String
+  proposedByPersonId     String           @db.Uuid
+  approvedByPersonId     String?          @db.Uuid
+  approvalRequestId      String?          @unique @db.Uuid
+  createdAt              DateTime         @default(now()) @db.Timestamptz(6)
+  updatedAt              DateTime         @updatedAt @db.Timestamptz(6)
+
+  @@unique([bankId, rail, currency, versionNo])
+  @@index([bankId, rail, status, effectiveFrom])
+  @@schema("public")
+}
+
+/// Corporate membership change requests; applied only after a second person approves (ADM-01).
+model UserChangeProposal {
+  id                 String           @id @default(uuid(7)) @db.Uuid
+  bankId             String           @db.Uuid
+  corporateId        String           @db.Uuid
+  kind               UserChangeKind
+  targetMembershipId String?          @db.Uuid
+  payload            Json
+  payloadHash        String
+  status             GovernanceStatus
+  reason             String
+  proposedByPersonId String           @db.Uuid
+  approvalRequestId  String?          @unique @db.Uuid
+  appliedAt          DateTime?        @db.Timestamptz(6)
+  createdAt          DateTime         @default(now()) @db.Timestamptz(6)
+  updatedAt          DateTime         @updatedAt @db.Timestamptz(6)
+
+  @@index([corporateId, status])
+  @@schema("public")
+}
+
+/// Emergency-stop restore requires independent review (AGR-02).
+model AgreementRestoreProposal {
+  id                 String           @id @default(uuid(7)) @db.Uuid
+  bankId             String           @db.Uuid
+  corporateId        String           @db.Uuid
+  agreementId        String           @db.Uuid
+  status             GovernanceStatus
+  reason             String
+  proposedByPersonId String           @db.Uuid
+  approvalRequestId  String?          @unique @db.Uuid
+  createdAt          DateTime         @default(now()) @db.Timestamptz(6)
+  updatedAt          DateTime         @updatedAt @db.Timestamptz(6)
+
+  @@index([agreementId, status])
+  @@schema("public")
+}
