@@ -4,6 +4,8 @@
  * hidden sidebar entry is never the access control.
  */
 import "server-only";
+// Same registrations as the API layer (labelers, approval targets): pages have their own module graph.
+import "@/server/bootstrap";
 import { headers } from "next/headers";
 import { isDomainError, type ErrorCode } from "@/contracts/errors";
 import { redirect } from "@/i18n/navigation";

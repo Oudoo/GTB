@@ -1,3 +1,7 @@
+// Approval targets, instruction observers, audit labelers and job handlers register themselves
+// as import side effects. The API layer must load them itself: a route handler does not share
+// module instances with the worker or with server pages.
+import "@/server/bootstrap";
 import { OperationRegistry, type AnyOperation } from "./framework";
 import { adminOperations } from "./operations/admin";
 import { batchOperations } from "./operations/batches";

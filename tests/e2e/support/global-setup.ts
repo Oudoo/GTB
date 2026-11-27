@@ -59,6 +59,7 @@ export default async function globalSetup(): Promise<() => Promise<void>> {
     CORE_ADAPTER: "simulated",
     BANK_TIMEZONE: "Africa/Tripoli",
     LOG_LEVEL: "info",
+    LOG_ERROR_FRAMES: "1",
     APP_BASE_URL: E2E_ORIGIN,
     PORT: String(E2E_PORT),
     DATABASE_URL: withDatabase(runtimeUrl, database),

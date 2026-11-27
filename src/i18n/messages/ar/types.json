@@ -101,7 +101,22 @@
     "REAPPROVAL_REQUIRED": "تغيّرت الشروط — يلزم الاعتماد من جديد",
     "RELEASE_BLOCKED": "أوقف ضابطٌ التنفيذ",
     "RELEASE_RETRY_REQUESTED": "طُلب التنفيذ مجددًا",
-    "UNKNOWN": "تحديث الحالة"
+    "UNKNOWN": "تحديث الحالة",
+    "BATCH_UPLOADED": "رُفع الملف",
+    "BATCH_VALIDATED": "تم التحقق من الأسطر",
+    "BATCH_VALIDATION_FAILED": "فشل التحقق — لا يمكن إرسال شيء",
+    "BATCH_ROWS_ACCEPTED": "تأكيد الأسطر المطلوب دفعها",
+    "BATCH_REVISED": "تغيّرت الأسطر — سقطت الاعتمادات السابقة",
+    "BATCH_SENT_FOR_APPROVAL": "أُرسلت للاعتماد",
+    "BATCH_APPROVED": "اعتُمدت",
+    "BATCH_PROCESSING": "بدأت المدفوعات — حُجزت الحدود",
+    "BATCH_COMPLETED": "اكتملت — سُوّيت جميع الأسطر",
+    "BATCH_PARTIALLY_COMPLETED": "انتهت — بعض الأسطر لم تُسوَّ",
+    "BATCH_FAILED": "فشلت — لم يُدفع أي سطر",
+    "BATCH_REJECTED": "رفضها المدقق",
+    "BATCH_EXPIRED": "انتهت مهلة الاعتماد دون قرار",
+    "BATCH_CANCELLED": "أُلغيت",
+    "BATCH_RETRY_CREATED": "أُنشئت دفعة إعادة محاولة من الأسطر الفاشلة"
   },
   "failure": {
     "INSUFFICIENT_FUNDS": "الرصيد المتاح لم يكفِ للمبلغ والرسوم.",

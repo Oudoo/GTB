@@ -72,16 +72,29 @@ export function redact(value: unknown, depth = 0): unknown {
  * Reduce any thrown value to a safe description. Raw error messages can contain user data
  * (for example a parser echoing a salary cell), so only the class and a stable code are kept.
  */
-export function safeError(error: unknown): { errorClass: string; code?: string } {
+export function safeError(error: unknown): { errorClass: string; code?: string; frames?: string[] } {
   if (isDomainError(error)) return { errorClass: "DomainError", code: error.code };
   if (error instanceof Error) {
     const code = (error as { code?: unknown }).code;
     return {
       errorClass: error.name || "Error",
       ...(typeof code === "string" && /^[A-Z0-9_]{1,40}$/.test(code) ? { code } : {}),
+      ...(process.env["LOG_ERROR_FRAMES"] === "1" ? { frames: codeFrames(error) } : {}),
     };
   }
   return { errorClass: typeof error };
+}
+
+/**
+ * Where an error was thrown, as code locations only. The message line is dropped because it
+ * can quote user data; a frame names a function and a file, never a value.
+ */
+function codeFrames(error: Error): string[] {
+  return (error.stack ?? "")
+    .split("\n")
+    .filter((line) => /^\s+at /.test(line))
+    .slice(0, 8)
+    .map((line) => line.trim().slice(0, 200));
 }
 
 let root: Logger | undefined;

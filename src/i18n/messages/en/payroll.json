@@ -1,1 +1,44 @@
-{}
+{
+  "employees": {
+    "title": "Employees",
+    "description": "The employee list used by payroll runs. Visible to payroll officers only.",
+    "counts": "{total} employees · {active} active · {unverified} need attention",
+    "caption": "Employees",
+    "code": "Code",
+    "name": "Name",
+    "account": "Account",
+    "check": "Name check",
+    "status": "Status",
+    "active": "Active",
+    "inactive": "Inactive",
+    "payable": "Can be paid",
+    "notPayable": "Cannot be paid",
+    "empty": "No employees yet",
+    "emptyHint": "Add the first employee below.",
+    "search": "Search by name or code",
+    "filter": "Show",
+    "filterAll": "All employees",
+    "filterACTIVE": "Active",
+    "filterINACTIVE": "Inactive",
+    "filterUNVERIFIED": "Need attention",
+    "addTitle": "Add an employee",
+    "addHelp": "The bank checks that the name matches the account holder. An employee whose account does not pass the check is saved but cannot be paid.",
+    "codeHint": "Letters, digits, dot, dash or underscore. Cannot be changed later.",
+    "accountHint": "Sandbox format: DEMO-LY-000000",
+    "add": "Add employee",
+    "edit": "Edit",
+    "editTitle": "Edit {code}",
+    "save": "Save changes",
+    "activeLabel": "Active — can be included in payroll",
+    "recheck": "Check the name again",
+    "saved": "Saved.",
+    "importDeferred": "Importing employees from a file is available through the API only in this release.",
+    "matchHelp": {
+      "MATCHED": "The name matches the account holder.",
+      "CLOSE_MATCH": "The name is close to the account holder's name but not the same. Correct it and save.",
+      "MISMATCH": "The name does not match the account holder. Correct the name or the account.",
+      "NOT_FOUND": "The account was not found. Correct the account.",
+      "UNCHECKED": "The name has not been checked yet."
+    }
+  }
+}

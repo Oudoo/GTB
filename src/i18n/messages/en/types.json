@@ -101,7 +101,22 @@
     "REAPPROVAL_REQUIRED": "Terms changed — approval required again",
     "RELEASE_BLOCKED": "Release blocked by a control",
     "RELEASE_RETRY_REQUESTED": "Release requested again",
-    "UNKNOWN": "Status update"
+    "UNKNOWN": "Status update",
+    "BATCH_UPLOADED": "File uploaded",
+    "BATCH_VALIDATED": "Rows validated",
+    "BATCH_VALIDATION_FAILED": "Validation failed — nothing can be submitted",
+    "BATCH_ROWS_ACCEPTED": "Rows to pay confirmed",
+    "BATCH_REVISED": "Row set changed — previous approvals void",
+    "BATCH_SENT_FOR_APPROVAL": "Submitted for approval",
+    "BATCH_APPROVED": "Approved",
+    "BATCH_PROCESSING": "Payments started — limits reserved",
+    "BATCH_COMPLETED": "Completed — every row settled",
+    "BATCH_PARTIALLY_COMPLETED": "Finished — some rows did not settle",
+    "BATCH_FAILED": "Failed — no row was paid",
+    "BATCH_REJECTED": "Rejected by a checker",
+    "BATCH_EXPIRED": "Approval period ended without a decision",
+    "BATCH_CANCELLED": "Cancelled",
+    "BATCH_RETRY_CREATED": "Retry batch created from failed rows"
   },
   "failure": {
     "INSUFFICIENT_FUNDS": "The available balance was not enough for the amount and fee.",
