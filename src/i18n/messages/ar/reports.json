@@ -9,8 +9,8 @@
   },
   "format": "الصيغة",
   "formats": {
-    "CSV": "CSV (جدول بيانات)",
-    "PDF": "PDF"
+    "CSV": "ملف CSV (جدول بيانات)",
+    "PDF": "ملف PDF"
   },
   "accounts": "الحسابات",
   "from": "من",
