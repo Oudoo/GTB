@@ -1,13 +1,12 @@
 /**
- * PWA and mobile checks from document 12 (P-01, P-04..P-07, P-10, P-11) against the PRODUCTION
+ * PWA and mobile checks from document 12 (P-01, P-04..P-08, P-10, P-11) against the PRODUCTION
  * build with the real service worker.
  *
  * These are Chromium results — desktop and phone EMULATION. They are not physical-device
- * results: installation on Android Chrome and iOS Safari (P-02, P-03), the dynamic update
- * prompt (P-08) and other engines (P-12) are recorded separately as pending in
- * docs/audit/IMPLEMENTATION-STATUS.md.
+ * results: installation on Android Chrome and iOS Safari (P-02, P-03) and other engines (P-12)
+ * are recorded separately as pending in docs/audit/IMPLEMENTATION-STATUS.md.
  */
-import { readFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import { apiFrom, expect, test } from "./support/fixtures.ts";
 
 test.use({ serviceWorkers: "allow" });
@@ -213,6 +212,96 @@ test("P-07 signing out ends every tab; Back does not bring a protected page back
   await expect(first.getByTestId("account-OPERATING")).toHaveCount(0, { timeout: 20_000 });
   await expect(first.locator("[data-money]")).toHaveCount(0);
   await second.close();
+});
+
+test("P-08 a new version waits for the person: no forced reload under an open form, then a clean switch", async ({ actor, path }) => {
+  const workerFile = new URL("../../public/sw.js", import.meta.url);
+  const original = readFileSync(workerFile, "utf8");
+  const currentBuild = /const BUILD_ID = "([^"]+)";/.exec(original)?.[1] as string;
+  expect(currentBuild).toBeTruthy();
+  const nextBuild = `${currentBuild}-next`;
+  type Version = { buildId: string; cacheName: string };
+  const versionOf = (page: import("@playwright/test").Page) =>
+    page.evaluate(
+      () =>
+        new Promise<Version>((resolve, reject) => {
+          const channel = new MessageChannel();
+          channel.port1.onmessage = (event) => resolve(event.data as Version);
+          const controller = navigator.serviceWorker.controller;
+          if (!controller) reject(new Error("no controlling worker"));
+          else controller.postMessage({ type: "GET_VERSION" }, [channel.port2]);
+        }),
+    );
+  const ownCaches = (page: import("@playwright/test").Page) => page.evaluate(async () => (await caches.keys()).filter((name) => name.startsWith("alqarib-public-")).sort());
+
+  const maker = await actor("aMaker");
+  try {
+    // A payment is being written when the new version is deployed.
+    await maker.goto(path("/payments/new"));
+    await controlled(maker);
+    expect(await versionOf(maker)).toMatchObject({ buildId: currentBuild });
+    await maker.locator('input[name="source"]').first().check();
+    await maker.getByTestId("wizard-next").click();
+    await maker.locator("#beneficiary").selectOption({ index: 1 });
+    await maker.getByTestId("wizard-next").click();
+    await maker.locator("#amount").fill("77.125");
+    await maker.locator("#purpose").fill("Typed before the update arrived");
+    await maker.evaluate(() => {
+      (window as unknown as { __stillHere?: string }).__stillHere = "same page";
+    });
+    const posts: string[] = [];
+    maker.on("request", (request) => {
+      if (request.method() !== "GET" && new URL(request.url()).pathname.startsWith("/api/")) posts.push(`${request.method()} ${new URL(request.url()).pathname}`);
+    });
+
+    // "Deploy": the server now offers a worker of another build.
+    writeFileSync(workerFile, original.replace(`const BUILD_ID = "${currentBuild}";`, `const BUILD_ID = "${nextBuild}";`));
+    await maker.evaluate(async () => {
+      const registration = await navigator.serviceWorker.getRegistration();
+      await registration?.update();
+    });
+
+    // The new worker is installed and WAITS; the page says so and keeps everything typed.
+    await expect(maker.getByTestId("pwa-update")).toBeVisible({ timeout: 20_000 });
+    expect(await maker.evaluate(() => (window as unknown as { __stillHere?: string }).__stillHere)).toBe("same page");
+    await expect(maker.locator("#amount")).toHaveValue("77.125");
+    await expect(maker.locator("#purpose")).toHaveValue("Typed before the update arrived");
+    expect(await versionOf(maker)).toMatchObject({ buildId: currentBuild });
+    expect(await maker.evaluate(async () => Boolean((await navigator.serviceWorker.getRegistration())?.waiting))).toBe(true);
+
+    // Asking for the update while the form is open is refused: no reload, nothing lost.
+    await maker.getByTestId("pwa-update").getByRole("button").first().click();
+    await maker.waitForTimeout(1_500);
+    expect(await maker.evaluate(() => (window as unknown as { __stillHere?: string }).__stillHere)).toBe("same page");
+    await expect(maker.locator("#amount")).toHaveValue("77.125");
+    expect(await versionOf(maker)).toMatchObject({ buildId: currentBuild });
+    expect(posts.filter((entry) => entry.startsWith("POST /api/v1/payments"))).toEqual([]);
+
+    // Once the person has left the form, the update is offered again and can be taken.
+    await maker.goto(path("/dashboard"));
+    await expect(maker.getByTestId("pwa-update")).toBeVisible({ timeout: 20_000 });
+    await maker.evaluate(() => {
+      (window as unknown as { __stillHere?: string }).__stillHere = "before update";
+    });
+    const reloaded = maker.waitForEvent("load", { timeout: 20_000 });
+    await maker.getByTestId("pwa-update").getByRole("button").first().click();
+    await reloaded;
+    await expect(maker.locator("main#main")).toBeVisible();
+    expect(await maker.evaluate(() => (window as unknown as { __stillHere?: string }).__stillHere ?? "reloaded")).toBe("reloaded");
+    await controlled(maker);
+    // The new build controls the page, the old public cache is gone, the session is the same.
+    expect(await versionOf(maker)).toMatchObject({ buildId: nextBuild, cacheName: `alqarib-public-${nextBuild}` });
+    expect(await ownCaches(maker)).toEqual([`alqarib-public-${nextBuild}`]);
+    await expect(maker.getByTestId("pwa-update")).toHaveCount(0);
+    expect((await apiFrom<{ person: unknown }>(maker, "GET", "/session")).status).toBe(200);
+    // The reload was a plain GET: nothing was sent again and no payment exists from the typed form.
+    expect(posts).toEqual([]);
+    const payments = await apiFrom<Array<{ purpose?: string; amount: { minor: string } }>>(maker, "GET", "/payments?limit=100");
+    expect((payments.body.data ?? []).filter((payment) => payment.amount.minor === "77125")).toEqual([]);
+  } finally {
+    // Put the built worker back exactly as the build left it.
+    writeFileSync(workerFile, original);
+  }
 });
 
 test("P-10 narrow portrait and landscape: no page-level horizontal overflow on the main workflows (emulation)", async ({ actor, path }) => {
