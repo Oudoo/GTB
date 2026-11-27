@@ -35,7 +35,7 @@
     "setup:env": "node scripts/setup-env.mjs",
     "openapi:generate": "tsx scripts/openapi-generate.ts",
     "openapi:check": "tsx scripts/openapi-generate.ts --check",
-    "worker:status": "tsx --env-file-if-exists=.env scripts/worker-status.ts",
+    "worker:status": "tsx --conditions=react-server --env-file-if-exists=.env scripts/worker-status.ts",
     "postinstall": "prisma generate"
   },
   "dependencies": {
