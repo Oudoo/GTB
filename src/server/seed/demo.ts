@@ -304,6 +304,15 @@ export async function seedDemo(deps: Deps, options: { password: string }): Promi
       skipDuplicates: true,
     });
   }
+  // Demo alert thresholds (ALT-01): low available balance on the operating account and 80% of
+  // the corporate daily limit. Synthetic values, not CBL parameters.
+  await db.alertRule.createMany({
+    data: [
+      { id: fixtureUuid("alert:A:lowBalance"), bankId: BANKS.A.id, corporateId: CORPORATES.A.id, kind: "LOW_BALANCE", accountId: ACCOUNTS.A_OPERATING.id, thresholdMinor: 20_000_000n, currency: "LYD", createdByPersonId: personId("aTreasurer") },
+      { id: fixtureUuid("alert:A:limitUsage"), bankId: BANKS.A.id, corporateId: CORPORATES.A.id, kind: "LIMIT_USAGE", thresholdBps: 8_000, usageScopeKey: "CORPORATE", usagePeriod: "DAY", createdByPersonId: personId("aTreasurer") },
+    ],
+    skipDuplicates: true,
+  });
   for (const employee of EMPLOYEES_A) {
     await db.payrollEmployee.createMany({
       data: [

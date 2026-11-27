@@ -1,1 +1,37 @@
-{}
+{
+  "title": "Alerts",
+  "description": "Things that need your attention. Alerts are shown only to you and never contain employee details.",
+  "empty": "No alerts",
+  "unreadCount": "{count} unread",
+  "markRead": "Mark as read",
+  "open": "Open",
+  "new": "New",
+  "showUnread": "Unread only",
+  "showAll": "All alerts",
+  "kinds": {
+    "batch": {
+      "validated": "{reference}: the file was checked — {valid} of {total} rows are valid.",
+      "validationFailed": "{reference}: the file cannot be used — no valid rows.",
+      "releaseBlocked": "{reference}: release is blocked and nothing was paid.",
+      "finished": "{reference} finished: {settled} settled, {failed} failed."
+    },
+    "deposit": {
+      "posted": "Deposit {reference} was credited.",
+      "returned": "Cheque deposit {reference} was returned. Nothing was credited."
+    },
+    "alert": {
+      "lowBalance": "The available balance of account {account} is below your alert level.",
+      "limitUsage": "Outgoing limit usage reached {percent}% of the corporate limit."
+    },
+    "other": "You have a new alert."
+  },
+  "rules": {
+    "title": "Alert rules",
+    "help": "Seeded demo thresholds. Editing them is not part of this release.",
+    "lowBalance": "Available balance below <amount></amount>",
+    "limitUsage": "Corporate limit usage at {percent}% or more",
+    "empty": "No alert rules",
+    "active": "Active",
+    "inactive": "Off"
+  }
+}

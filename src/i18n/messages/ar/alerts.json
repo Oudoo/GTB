@@ -1,1 +1,37 @@
-{}
+{
+  "title": "التنبيهات",
+  "description": "أمور تستدعي انتباهك. التنبيهات تظهر لك وحدك ولا تتضمن تفاصيل الموظفين.",
+  "empty": "لا توجد تنبيهات",
+  "unreadCount": "{count} غير مقروء",
+  "markRead": "تعليم كمقروء",
+  "open": "فتح",
+  "new": "جديد",
+  "showUnread": "غير المقروءة فقط",
+  "showAll": "كل التنبيهات",
+  "kinds": {
+    "batch": {
+      "validated": "{reference}: تم التحقق من الملف — {valid} من {total} سطراً صالح.",
+      "validationFailed": "{reference}: لا يمكن استخدام الملف — لا توجد أسطر صالحة.",
+      "releaseBlocked": "{reference}: الإفراج موقوف ولم يُدفع شيء.",
+      "finished": "انتهت {reference}: {settled} مسوّاة و{failed} فاشلة."
+    },
+    "deposit": {
+      "posted": "قُيّد الإيداع {reference}.",
+      "returned": "أُعيد شيك الإيداع {reference}. لم يُقيَّد شيء."
+    },
+    "alert": {
+      "lowBalance": "الرصيد المتاح في الحساب {account} أقل من حدّ التنبيه.",
+      "limitUsage": "بلغ استخدام حدّ المدفوعات الصادرة {percent}% من حدّ الشركة."
+    },
+    "other": "لديك تنبيه جديد."
+  },
+  "rules": {
+    "title": "قواعد التنبيه",
+    "help": "حدود تجريبية مُعدّة مسبقاً. تعديلها غير متاح في هذا الإصدار.",
+    "lowBalance": "الرصيد المتاح أقل من <amount></amount>",
+    "limitUsage": "استخدام حدّ الشركة {percent}% أو أكثر",
+    "empty": "لا توجد قواعد تنبيه",
+    "active": "مفعّلة",
+    "inactive": "متوقفة"
+  }
+}

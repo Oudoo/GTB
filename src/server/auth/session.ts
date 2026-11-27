@@ -289,6 +289,18 @@ export async function selectContext(deps: Deps, session: SessionInfo, membership
 }
 
 /**
+ * The CURRENT authorization context of a membership, for a background job that completes a
+ * request a person made earlier (e.g. generating a report). It re-reads roles, grants and
+ * status now, so rights that were removed after the request are not honoured. Returns null when
+ * the membership is no longer active. Never called from a request path.
+ */
+export async function currentContextOf(deps: Deps, membershipId: string, correlationId: string): Promise<AuthContext | null> {
+  const membership = await deps.db.membership.findUnique({ where: { id: membershipId }, include: { person: true } });
+  if (!membership || membership.person.status !== "ACTIVE") return null;
+  return buildContext(deps, membershipId, { id: membership.person.id, name: membership.person.name, email: membership.person.email }, "background-job", correlationId);
+}
+
+/**
  * Context of a seeded membership WITHOUT a browser session. Used only by the demo seed to drive
  * the real governance services as two distinct seeded administrators. It is not reachable from
  * any request path: requests always go through `resolveSession` or `resolveCredential`.
